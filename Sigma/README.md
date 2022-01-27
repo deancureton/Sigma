@@ -1,4 +1,4 @@
-# Welcome to the Sigma programming language.
+# Welcome to the Sigma programming language
 
 ## A language for sigmas only
 
