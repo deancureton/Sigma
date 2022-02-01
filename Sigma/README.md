@@ -59,7 +59,7 @@ This block of code would log 6, then 9.
 
 # Comparators
 
-We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. This equality is strict. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>=` and `<=` also work as regular, but `≥` and `≤` are also supported by Sigma.
+We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. This equality is strict. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>?` and `<?` also work as regular, but `≥` and `≤` are also supported by Sigma.
 
 # Loops
 
