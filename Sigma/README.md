@@ -133,6 +133,7 @@ The `add` function takes two parameters: `content` and `index` (optional), and a
 
 | Keyword   | Meaning                                         |
 |-----------|-------------------------------------------------|
+| `‼️` | equivalent to a semicolon |
 | `num`     | number variable                                 |
 | `str`     | string variable                                 |
 | `tf`      | boolean variable                                |
@@ -140,6 +141,7 @@ The `add` function takes two parameters: `content` and `index` (optional), and a
 | `log`     | log something to the console with a line break  |
 | `logl`    | log something to the console with no line break |
 | `func`    | function                                        |
+| `|` | encloses blocks of code |
 | `take`    | return value from a function                    |
 | `nothing` | null/undefined                                  |
 | `troo`    | true                                            |
