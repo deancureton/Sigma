@@ -131,37 +131,37 @@ The `add` function takes two parameters: `content` and `index` (optional), and a
 
 # Keyword Overview
 
-| Keyword   | Meaning                                         |
-|-----------|-------------------------------------------------|
-| `‼️` | equivalent to a semicolon |
-| `num`     | number variable                                 |
-| `str`     | string variable                                 |
-| `tf`      | boolean variable                                |
-| `arr` | array |
-| `log`     | log something to the console with a line break  |
-| `logl`    | log something to the console with no line break |
-| `func`    | function                                        |
-| `|` | encloses blocks of code |
-| `take`    | return value from a function                    |
-| `nothing` | null/undefined                                  |
-| `troo`    | true                                            |
-| `fals`    | false                                           |
-| `?`       | equals?                                         |
-| `??`      | same type?                                      |
-| `~`       | approximately equal (5% for `num`s)?            |
-| `>=`/`>?` | greater than or equal to?                       |
-| `<=`/`<?` | less than or equal to?                          |
-| `loopnum` | loop for some number of times                   |
-| `looptf`  | loop as long as a condition holds true          |
-| `count`   | the number of times a loop has run              |
-| `//`      | integer division                                |
-| `+<-`     | `+=`                                            |
-| `-<-`     | `-=`                                            |
-| `++`      | increment                                       |
-| `--`      | decrement                                       |
-| `and`     | boolean and                                     |
-| `or`      | boolean or                                      |
-| `not`     | boolean not                                     |
+| Keyword            | Meaning                                        |
+|--------------------|------------------------------------------------|
+| `‼️`               | equivalent to a semicolon |
+| `num`              | number variable                                |
+| `str`              | string variable                                |
+| `tf`               | boolean variable                               |
+| `arr`              | array |
+| `log`              | log something to the console with a line break |
+| `logl`             | log something to the console with no line break |
+| `func`             | function                                       |
+| vertical pipe      | encloses blocks of code |
+| `take`             | return value from a function                   |
+| `nothing`          | null/undefined                                 |
+| `troo`             | true                                           |
+| `fals`             | false                                          |
+| `?`                | equals?                                        |
+| `??`               | same type?                                     |
+| `~`                | approximately equal (5% for `num`s)?           |
+| `>=`/`>?`          | greater than or equal to?                      |
+| `<=`/`<?`          | less than or equal to?                         |
+| `loopnum`          | loop for some number of times                  |
+| `looptf`           | loop as long as a condition holds true         |
+| `count`            | the number of times a loop has run             |
+| `//`               | integer division                               |
+| `+<-`              | `+=`                                           |
+| `-<-`              | `-=`                                           |
+| `++`               | increment                                      |
+| `--`               | decrement                                      |
+| `and`              | boolean and                                    |
+| `or`               | boolean or                                     |
+| `not`              | boolean not                                    |
 | `if`/`butif`/`but` | if/else statements |
-| `add` | add an element to an array |
-| `remove` | remove an element from an array |
+| `add`              | add an element to an array |
+| `remove`           | remove an element from an array |
