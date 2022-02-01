@@ -25,7 +25,7 @@ To assign a value to `x` outside of declaration, the keyword `str` would be left
 
 To convert between types in Sigma, simply use a period. As an example, consider the following block of code:
 ```
-tf x <- troo‼️
+tf x <- true‼️
 log {x.num}‼️
 ```
 This block of code would output `1`.
@@ -91,7 +91,7 @@ and the "Hello!"s would extend infinitely.
 
 Sigma is an infix language, and all arithmetic operators work the same as in any other language. However, since integer division isn't really a thing in Sigma since every number has the same type, integer division is represented by the symbol `//`. Consider `5.5 // 2.5`. In this case, Sigma would round both `5.5` and `2.5` down to `5` and `2`, and then perform integer division, giving `2` as a result.
 The symbols `+=` and `-=` would be represented as `+<-` and `-<-`. Incrementing and decrementing would be represented the same way as any other language, using `++` and `--`.  
-Boolean `and`, `or` and `not` operators are implemented in Sigma using the keywords themselves. For example, `troo and fals` would output `fals`.
+Boolean `and`, `or` and `not` operators are implemented in Sigma using the keywords themselves. For example, `true and fals` would output `fals`.
 
 # Conditionals
 
@@ -99,7 +99,7 @@ Conditionals in Sigma are treated very similarly to most other languages. The fo
 ```
 if {fals} |
     log {"Block 1"}‼️
-| butif {troo} |
+| butif {true} |
     log {"Block 2"}‼️
 | but |
     log {"Block 3"}‼️
@@ -111,13 +111,13 @@ This code would output `"Block 2"`. As you can see, if/else statements are now i
 
 As noted before, all arrays in Sigma are dynamic and do not have a set type. To declare an array in Sigma, we must write:
 ```
-arr x <- (1 troo "three")‼️
+arr x <- (1 true "three")‼️
 ```
 Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred). To access elements in an array, simply use periods again (indexing starts at 0):
 ```
 log {x.0.num + x.1.num}‼️
 ```
-This code would output 2 (since `troo` is equivalent to 1 when converted to a `num`).  
+This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
 To assign values in an array, simply use the same assignment as you would for variables:
 ```
 num x.2 <- 5‼️
@@ -144,8 +144,8 @@ The `add` function takes two parameters: `content` and `index` (optional), and a
 | vertical pipe      | encloses blocks of code |
 | `take`             | return value from a function                   |
 | `nothing`          | null/undefined                                 |
-| `troo`             | true                                           |
-| `fals`             | false                                          |
+| `true`             | boolean true                                            |
+| `fals`             | boolean false                                          |
 | `?`                | equals?                                        |
 | `??`               | same type?                                     |
 | `~`                | approximately equal (5% for `num`s)?           |
