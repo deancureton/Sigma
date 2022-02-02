@@ -36,8 +36,8 @@ This block of code would output `1`.
 
 Defining functions in Sigma is very similar to regular variable declaration, except with different keywords. Let's start with an example:
 ```
-func x <- arg1 arg2 [arg3] |
-    log {arg1.num + arg2.num + arg3.num}‼️
+func x <- num arg1 num arg2 [num arg3] |
+    log {arg1 + arg2 + arg3}‼️
     take {nothing}‼️
 |‼️
 ```
@@ -56,10 +56,11 @@ This block of code would log 6, then 9.
 
 `log` takes in one argument, outputs the argument to the console, and appends a line break to the end.  
 `logl` takes in one argument and outputs the argument to the console with no line break.
+`random` takes in two number arguments and outputs a random number between the two.
 
 # Comparators
 
-We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. This equality is strict. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>?` and `<?` also work as regular, but `≥` and `≤` are also supported by Sigma.
+We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>?` and `<?` also work as regular, but `≥` and `≤` are also supported by Sigma.
 
 # Loops
 
@@ -113,21 +114,25 @@ As noted before, all arrays in Sigma are dynamic and do not have a set type. To 
 ```
 arr x <- (1 true "three")‼️
 ```
-Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred). To access elements in an array, simply use periods again (indexing starts at 0):
+Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred). To access elements in an array, simply use parentheses (indexing starts at 0):
 ```
-log {x.0.num + x.1.num}‼️
+log {x(0).num + x(1).num}‼️
 ```
 This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
 To assign values in an array, simply use the same assignment as you would for variables:
 ```
-num x.2 <- 5‼️
+num x(2) <- 5‼️
 ```
 To add or remove elements from an array, call the `add` or `remove` functions:
 ```
-x.add {2, 3}
-x.remove {0}
+x.add {2, 3}‼️
+x.remove {0}‼️
 ```
 The `add` function takes two parameters: `content` and `index` (optional), and adds the content at whatever index signified (if `index` is empty, it adds to the end). `remove` simply removes the element at the designated index.
+
+# Comments
+
+To comment something out in Sigma, just use the `\` symbol. For multi-line comments, use `\.` and `.\`. 
 
 # Keyword Overview
 
@@ -165,3 +170,5 @@ The `add` function takes two parameters: `content` and `index` (optional), and a
 | `if`/`butif`/`but` | if/else statements |
 | `add`              | add an element to an array |
 | `remove`           | remove an element from an array |
+| `\` | comment |
+| `\.` `.\` | multi-line comment |
