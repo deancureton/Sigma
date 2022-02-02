@@ -70,9 +70,9 @@ for {num i <- 0‼️ i <? 5‼️ i++} |
     \ code
 |
 ```
-Foreach loops are implemented as such:
+Foreach loops are implemented as such (still using the `for` keyword):
 ```
-foreach {var i of array} |
+for {var i of array} |
     \ code
 |
 ```
