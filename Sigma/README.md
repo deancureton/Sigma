@@ -7,7 +7,7 @@ This language was developed by Dean Cureton for the spring 2022 Westminster Hono
 ## Types
 
 Sigma is unique in that it uses a single type for every number where other languages would use multiple. For example, `int`, `double`, `long`, and `float` would all use the same type, `num`, in Sigma. This makes arithmetic far easier and different typing between variables less of an issue.  
-Other types of variables in Sigma include `str` for string (which also includes the same functionality as `char` in other languages) and `tf` for bool. Finally, arrays in Sigma are dynamic and do not have a single typing. For example, a single array can include both `num`s and `str`s.
+Other types of variables in Sigma include `str` for string (which also includes the same functionality as `char` in other languages), `tf` for bool, and `var` for a generic variable. Finally, arrays in Sigma are dynamic and do not have a single typing. For example, a single array can include both `num`s and `str`s.
 
 ## Declaring, Assigning, and Initializing Variables
 
@@ -15,11 +15,11 @@ Declaring a variable in Sigma is easy: begin with the keyword corresponding with
 ```
 str x‼️
 ```
-To assign a value to `x` at declaration, use the arrow sign before typing the actual content of the variable:
+To assign a value to `x` at declaration, use the arrow sign before typing the actual content of the variable (the keyword `var` is not permitted in this case):
 ```
 str x <- "This is a string."‼️
 ```
-To assign a value to `x` outside of declaration, the keyword `str` would be left out.
+To assign a value to `x` outside of declaration, the type keyword would be left out.
 
 ## Interchanging Types
 
@@ -64,13 +64,29 @@ We don't like equal signs in Sigma. If you type one, Sigma will throw an error. 
 
 # Loops
 
-Looping in Sigma is very simple. The two main loop functions are `loopnum` and `looptf` to represent the two types of loops that Sigma supports. `loopnum` takes in one number argument (if the argument is not an integer it rounds down) and loops the block inside the amount of times as the argument. In addition, inside loops, the keyword `count` is reserved to keep track of the amount of times the loop has run so far (starting at `0`). `looptf` loops a block of code as long as the conditional statement in the argument remains true. Consider the following block of code:
+Looping in Sigma is very simple. For loops in Sigma are quite simple, using much of the same notation as most other languages:
 ```
-loopnum {5} |
-    log {count}‼️
+for {num i <- 0‼️ i <? 5‼️ i++} |
+    \ code
 |
-looptf {2 ? 2} |
-    log {"Hello!"}‼️
+```
+Foreach loops are implemented as such:
+```
+foreach {var i of array} |
+    \ code
+|
+```
+While loops are instead `when`:
+```
+when {2 ? 2} |
+    \ code
+|
+```
+
+Besides for and while loops, Sigma supports `loop` as a simpler version of `for`. `loop` takes in one number argument (if the argument is not an integer it rounds down) and loops the block inside the amount of times as the argument. In addition, inside loops, the keyword `count` is reserved to keep track of the amount of times the loop has run so far (starting at `0`). Consider the following block of code:
+```
+loop {5} |
+    log {count}‼️
 |
 ```
 This block of code would output:
@@ -80,13 +96,7 @@ This block of code would output:
 2
 3
 4
-Hello!
-Hello!
-Hello!
-Hello!
-Hello!
 ```
-and the "Hello!"s would extend infinitely.
 
 # Operators
 
