@@ -1,1 +1,59 @@
-program ::= statementList*
+program ::= [statementList]
+statementList ::= statement+
+statement ::= variableDeclaration
+            | variableInitialization
+            | assignment
+            | functionDefinition
+            | functionCall
+            | forLoop
+            | foreachLoop
+            | whenLoop
+            | loopLoop
+            | ifStatement
+            | butifStatement
+            | butStatement
+            | comment
+variableDeclaration ::= type ID "‼️"
+variableInitialization ::= strictType regularAssignment "‼️"
+assignment ::= unaryAssignment | regularAssignment
+functionDefinition ::= "func" ID "<-" functionArguments block "‼️"
+functionCall ::= ID "{" callArguments "}" "‼️"
+forLoop ::= "for" "{" variableInitialization "‼️" expression "‼️" assignment "}" block
+foreachLoop ::= "for" "{" "var" ID "of" ID "}" block
+whenLoop ::= "when" "{" expression "}" block
+loopLoop ::= "loop" "{" number "}" block
+ifStatement ::= "if" "{" expression "}" block butifStatement+ [butStatement]
+butifStatement ::= "butif" "{" expression "}" block
+butStatement ::= "butif" "{" expression "}" block
+comment ::= singleLineComment | multiLineComment
+singleLineComment ::= "\\" TEXT
+multiLineComment ::= "\\." TEXT ".\\"
+type ::= "var" | strictType
+strictType ::= "str" | "num" | "tf" | "arr"
+unaryAssignment ::= increment | decrement
+increment ::= ID "++"
+decrement ::= ID "--"
+regularAssignment ::= ID [binaryArithmeticOperator] "<-" expression
+functionArguments ::= regularFunctionArgument+ optionalFunctionArgument+
+regularFunctionArgument ::= type ID
+optionalFunctionArgument ::= "[" type ID "]"
+block ::= "|" [statementList] "|"
+callArguments ::= primary+
+expression ::= binaryExpression
+             | primary
+             | unaryExpression
+binaryExpression ::= primary binaryOperator primary
+                   | primary binaryOperator binaryExpression
+primary ::= number | ID | STRING | boolean | parenthesizedExpression | array | cast
+unaryExpression ::= unaryAssignment | negationExpression
+binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
+binaryArithmeticOperator ::= "+" | "-" | "/" | "*" | "//" | "^" | "%"
+binaryComparator ::= ">" | "<" | ">?" | "<?" | "≥" | "≤" | "?" | "!?" | "??" | "!??" | "~" | "!~"
+binaryBooleanOperator ::= "and" | "or" | "not" | "nand" | "nor" | "xor" | "xnor" | "implies"
+number ::= INTEGER | FLOATINGPOINT
+boolean ::= TRUE | FALSE
+parenthesizedExpression ::= "{" expression "}"
+negationExpression ::= "!" expression
+array ::= "(" arrayElements ")"
+arrayElements ::= primary+
+cast ::= ID "." strictType
