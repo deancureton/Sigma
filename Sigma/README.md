@@ -124,19 +124,19 @@ As noted before, all arrays in Sigma are dynamic and do not have a set type. To 
 ```
 arr x <- (1 true "three")‼️
 ```
-Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred). To access elements in an array, simply use parentheses (indexing starts at 0):
+Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred). To access elements in an array, simply use the `aget` function (indexing starts at 0):
 ```
-log {x(0).num + x(1).num}‼️
+log {aget {x 0}.num + aget {x 1}.num}‼️
 ```
 This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
-To assign values in an array, simply use the same assignment as you would for variables:
+To assign values in an array, simply use the `aset` function:
 ```
-num x(2) <- 5‼️
+aset {x 2 5}‼️
 ```
 To add or remove elements from an array, call the `add` or `remove` functions:
 ```
-add {x, 2, 3}‼️
-remove {x, 0}‼️
+add {x 2 3}‼️
+remove {x 0}‼️
 ```
 The `add` function takes two parameters: `content` and `index` (optional), and adds the content at whatever index signified (if `index` is empty, it adds to the end). `remove` simply removes the element at the designated index.
 
