@@ -165,8 +165,8 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 | `?`                | equals?                                        |
 | `??`               | same type?                                     |
 | `~`                | approximately equal (5% for `num`s)?           |
-| `>=`/`>?`          | greater than or equal to?                      |
-| `<=`/`<?`          | less than or equal to?                         |
+| `>=`/`>?`/`≥`          | greater than or equal to?                      |
+| `<=`/`<?`/`≤`         | less than or equal to?                         |
 | `loopnum`          | loop for some number of times                  |
 | `looptf`           | loop as long as a condition holds true         |
 | `count`            | the number of times a loop has run             |
