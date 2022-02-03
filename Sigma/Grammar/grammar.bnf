@@ -1,3 +1,4 @@
+// Dean Cureton, https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
 program ::= [statementList]
 statementList ::= statement+
 statement ::= variableDeclaration
@@ -26,8 +27,8 @@ ifStatement ::= "if" "{" expression "}" block butifStatement+ [butStatement]
 butifStatement ::= "butif" "{" expression "}" block
 butStatement ::= "butif" "{" expression "}" block
 comment ::= singleLineComment | multiLineComment
-singleLineComment ::= "\\" TEXT
-multiLineComment ::= "\\." TEXT ".\\"
+singleLineComment ::= "\\" COMMENTTEXT
+multiLineComment ::= "\\." COMMENTTEXT ".\\"
 type ::= "var" | strictType
 strictType ::= "str" | "num" | "tf" | "arr"
 unaryAssignment ::= increment | decrement
