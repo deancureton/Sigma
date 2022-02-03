@@ -135,8 +135,8 @@ num x(2) <- 5‼️
 ```
 To add or remove elements from an array, call the `add` or `remove` functions:
 ```
-x.add {2, 3}‼️
-x.remove {0}‼️
+add {x, 2, 3}‼️
+remove {x, 0}‼️
 ```
 The `add` function takes two parameters: `content` and `index` (optional), and adds the content at whatever index signified (if `index` is empty, it adds to the end). `remove` simply removes the element at the designated index.
 
