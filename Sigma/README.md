@@ -60,7 +60,7 @@ This block of code would log 6, then 9.
 
 # Comparators
 
-We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>?` and `<?` also work as regular, but `≥` and `≤` are also supported by Sigma.
+We don't like equal signs in Sigma. If you type one, Sigma will throw an error. So, to check whether two things are equal in Sigma, use the `?` symbol. To check whether two variables have the same type, use the `??` symbol. To check if two numbers are within 5% of each other, use the `~` symbol (approximately equal). Use the `>` and `<` symbols for greater than and less than like in any other language. `>?` and `<?` also work as regular, but `≥` and `≤` are also supported by Sigma. In addition, adding the `!` symbol before any of these comparators checks if the opposite is true.
 
 # Loops
 
@@ -100,9 +100,9 @@ This block of code would output:
 
 # Operators
 
-Sigma is an infix language, and all arithmetic operators work the same as in any other language. However, since integer division isn't really a thing in Sigma since every number has the same type, integer division is represented by the symbol `//`. Consider `5.5 // 2.5`. In this case, Sigma would round both `5.5` and `2.5` down to `5` and `2`, and then perform integer division, giving `2` as a result.
-The symbols `+=` and `-=` would be represented as `+<-` and `-<-`. Incrementing and decrementing would be represented the same way as any other language, using `++` and `--`.  
-Boolean `and`, `or` and `not` operators are implemented in Sigma using the keywords themselves. For example, `true and fals` would output `fals`.
+Sigma is an infix language, and all arithmetic operators work the same as in any other language (including `^` for exponentials and `%` for modulus). However, since integer division isn't really a thing in Sigma since every number has the same type, integer division is represented by the symbol `//`. Consider `5.5 // 2.5`. In this case, Sigma would round both `5.5` and `2.5` down to `5` and `2`, and then perform integer division, giving `2` as a result.
+The symbols `+=` and `-=` would be represented as `+<-` and `-<-`, and this same pattern applies for every other arithmetic operator. Incrementing and decrementing would be represented the same way as any other language, using `++` and `--`.  
+Boolean operators are implemented in Sigma using the keywords themselves. For example, `true and fals` would output `fals`. The boolean operators that Sigma supports are `and`, `or`, `not`, `nand`, `nor`, `xor`, `xnor`, and `implies`. 
 
 # Conditionals
 
@@ -129,7 +129,7 @@ Arrays are surrounded by parentheses and elements are separated by spaces (types
 log {aget {x 0}.num + aget {x 1}.num}‼️
 ```
 This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
-To assign values in an array, simply use the `aset` function:
+To assign values in an array, simply use the `aset` function (using the array as the first argument, the index as the second, and the content as the third):
 ```
 aset {x 2 5}‼️
 ```
@@ -138,7 +138,7 @@ To add or remove elements from an array, call the `add` or `remove` functions:
 add {x 2 3}‼️
 remove {x 0}‼️
 ```
-The `add` function takes two parameters: `content` and `index` (optional), and adds the content at whatever index signified (if `index` is empty, it adds to the end). `remove` simply removes the element at the designated index.
+The `add` function takes three parameters: `array`, `content` and `index` (optional), and adds the content to the array at whatever index signified (if `index` is empty, it adds to the end). `remove` takes in `array` and `index` and simply removes the element of the array at the designated index.
 
 # Comments
 
@@ -155,6 +155,7 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 | `arr`              | array |
 | `log`              | log something to the console with a line break |
 | `logl`             | log something to the console with no line break |
+| `random` | output a random number between two number arguments |
 | `func`             | function                                       |
 | vertical pipe      | encloses blocks of code |
 | `take`             | return value from a function                   |
@@ -170,14 +171,9 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 | `looptf`           | loop as long as a condition holds true         |
 | `count`            | the number of times a loop has run             |
 | `//`               | integer division                               |
-| `+<-`              | `+=`                                           |
-| `-<-`              | `-=`                                           |
-| `++`               | increment                                      |
-| `--`               | decrement                                      |
-| `and`              | boolean and                                    |
-| `or`               | boolean or                                     |
-| `not`              | boolean not                                    |
 | `if`/`butif`/`but` | if/else statements |
+| `aset` | set an element in an array |
+| `aget` | get an element from an array |
 | `add`              | add an element to an array |
 | `remove`           | remove an element from an array |
 | `\` | comment |
