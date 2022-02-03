@@ -1,20 +1,17 @@
 // Dean Cureton, https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
 program ::= [statementList]
-
 statementList ::= statement+
-
 statement ::= variableDeclaration
             | variableInitialization
-            | assignment
+            | ( assignment "‼️" )
             | functionDefinition
-            | functionCall
             | forLoop
             | foreachLoop
             | whenLoop
             | loopLoop
             | ifStatement
             | comment
-            | expression
+            | ( expression "‼️" )
 
 variableDeclaration ::= type ID "‼️"
 variableInitialization ::= strictType regularAssignment "‼️"
@@ -23,6 +20,7 @@ assignment ::= unaryAssignment | regularAssignment
 
 functionDefinition ::= "func" ID "<-" functionArguments block "‼️"
 functionCall ::= ID "{" callArguments "}" "‼️"
+callArguments ::= primary*
 
 forLoop ::= "for" "{" variableInitialization "‼️" expression "‼️" assignment "}" block
 foreachLoop ::= "for" "{" "var" ID "of" ID "}" block
@@ -52,8 +50,6 @@ optionalFunctionArgument ::= "[" type ID "]"
 
 block ::= "|" [statementList] "|"
 
-callArguments ::= primary*
-
 expression ::= binaryExpression
              | primary
              | unaryExpression
@@ -61,9 +57,12 @@ expression ::= binaryExpression
 binaryExpression ::= primary binaryOperator primary
                    | primary binaryOperator binaryExpression
 
-primary ::= number | ID | STRING | boolean | parenthesizedExpression | array | cast
+primary ::= number | ID | STRING | boolean | unaryExpression | array | cast | functionCall
 
-unaryExpression ::= unaryAssignment | negationExpression | minusExpression
+unaryExpression ::= unaryAssignment | negationExpression | minusExpression | parenthesizedExpression
+parenthesizedExpression ::= "{" expression "}"
+negationExpression ::= "!" expression
+minusExpression ::= "-" expression
 
 binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
 binaryArithmeticOperator ::= "+" | "-" | "/" | "*" | "//" | "^" | "%"
@@ -71,12 +70,7 @@ binaryComparator ::= ">" | "<" | ">?" | "<?" | "≥" | "≤" | "?" | "!?" | "??"
 binaryBooleanOperator ::= "and" | "or" | "not" | "nand" | "nor" | "xor" | "xnor" | "implies"
 
 number ::= INTEGER | REAL
-
 boolean ::= "true" | "false"
-
-parenthesizedExpression ::= "{" expression "}"
-negationExpression ::= "!" expression
-minusExpression ::= "-" expression
 
 array ::= "(" arrayElements ")"
 arrayElements ::= primary*
