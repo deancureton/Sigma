@@ -1,3 +1,5 @@
+package com.sigma.lexicalAnalysis;
+
 public enum TokenType {
     // Single character
 
