@@ -8,62 +8,57 @@ public class Lexeme {
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
 
-    public Lexeme(TokenType lexemeType, int lexemeLineNumber) {
-        type = lexemeType;
-        lineNumber = lexemeLineNumber;
+    public Lexeme(TokenType type, int lineNumber) {
+        this.type = type;
+        this.lineNumber = lineNumber;
     }
 
-    public Lexeme(TokenType lexemeType, int lexemeLineNumber, String lexemeValue) {
-        stringVal = lexemeValue;
-        type = lexemeType;
-        lineNumber = lexemeLineNumber;
+    public Lexeme(TokenType type, int lineNumber, String stringVal) {
+        this.type = type;
+        this.lineNumber = lineNumber;
+        this.stringVal = stringVal;
     }
 
-    public Lexeme(TokenType lexemeType, int lexemeLineNumber, double lexemeValue) {
-        numVal = lexemeValue;
-        type = lexemeType;
-        lineNumber = lexemeLineNumber;
+    public Lexeme(TokenType type, int lineNumber, double numVal) {
+        this.type = type;
+        this.lineNumber = lineNumber;
+        this.numVal = numVal;
     }
 
-    public Lexeme(TokenType lexemeType, int lexemeLineNumber, boolean lexemeValue) {
-        boolVal = lexemeValue;
-        type = lexemeType;
-        lineNumber = lexemeLineNumber;
+    public Lexeme(TokenType type, int lineNumber, boolean boolVal) {
+        this.type = type;
+        this.lineNumber = lineNumber;
+        this.boolVal = boolVal;
     }
 
     public TokenType getType() {
-        return type;
+        return this.type;
     }
 
     public Integer getLineNumber() {
-        return lineNumber;
+        return this.lineNumber;
     }
 
     public String getStringVal() {
-        return stringVal;
+        return this.stringVal;
     }
 
     public Double getNumVal() {
-        return numVal;
+        return this.numVal;
     }
 
     public Boolean getBoolVal() {
-        return boolVal;
+        return this.boolVal;
     }
 
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
         if (getStringVal() != null) {
             output += ": " + getStringVal();
-            return output;
-        }
-        if (getNumVal() != null) {
+        } else if (getNumVal() != null) {
             output += ": " + getNumVal();
-            return output;
-        }
-        if (getBoolVal() != null) {
+        } else if (getBoolVal() != null) {
             output += ": " + getBoolVal();
-            return output;
         }
         return output;
     }
