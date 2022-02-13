@@ -1,21 +1,47 @@
 package com.sigma.lexicalAnalysis;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
 public class LexerTest {
-    public static void main(String[] args) {
-        /*Lexeme numberKeyword = new Lexeme(NUM_KEYWORD, 1);
-        Lexeme x = new Lexeme(IDENTIFIER, 1, "x");
-        Lexeme assignment = new Lexeme(ASSIGNMENT, 1);
-        Lexeme ten = new Lexeme(NUMBER, 1, 10);
-        Lexeme semi = new Lexeme(BANGBANG, 1);
-        System.out.println(numberKeyword);
-        System.out.println(x);
-        System.out.println(assignment);
-        System.out.println(ten);
-        System.out.println(semi);*/
-        Lexer lexer = new Lexer("int x = 10;");
-        lexer.lex();
+    public static void runFile(String path) throws IOException {
+        String sourceCode = getSourceCodeFromFile(path);
+        run(sourceCode);
+
+        //if (hadSyntaxError) System.exit(65);
+        //if (hadRuntimeError) System.exit(70);
+    }
+
+    private static String getSourceCodeFromFile(String path) throws IOException {
+        byte[] bytes = Files.readAllBytes(Paths.get(path));
+        return new String(bytes, Charset.defaultCharset());
+    }
+
+    public static void run(String sourceCode) {
+        Lexer lexer = new Lexer(sourceCode);
+        ArrayList<Lexeme> lexemes = lexer.lex();
         lexer.printLexemes();
+    }
+
+    private static boolean singlePathProvided(String[] args) {
+        if (args.length == 1) return true;
+        return false;
+    }
+
+    public static void main(String[] args) throws IOException {
+        try {
+            if (singlePathProvided(args)) runFile(args[0]);
+            else {
+                System.out.println("Usage: sigma [path to .sigma file]");
+                System.exit(64);
+            }
+        } catch (IOException exception) {
+            throw new IOException(exception.toString());
+        }
     }
 }
