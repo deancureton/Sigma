@@ -1,6 +1,9 @@
 package com.sigma.lexicalAnalysis;
 
+import static com.sigma.lexicalAnalysis.TokenType.*;
+
 public class Lexeme {
+    // Instance Variables
     private TokenType type;
     private Integer lineNumber;
 
@@ -8,6 +11,7 @@ public class Lexeme {
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
 
+    // Constructors
     public Lexeme(TokenType type, int lineNumber) {
         this.type = type;
         this.lineNumber = lineNumber;
@@ -31,6 +35,7 @@ public class Lexeme {
         this.boolVal = boolVal;
     }
 
+    // Getters
     public TokenType getType() {
         return this.type;
     }
@@ -51,10 +56,15 @@ public class Lexeme {
         return this.boolVal;
     }
 
+    // toString
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
         if (getStringVal() != null) {
-            output += ": " + getStringVal();
+            if (getType() == STRING) {
+                output += ": \"" + getStringVal() + "\"";
+            } else {
+                output += ": " + getStringVal();
+            }
         } else if (getNumVal() != null) {
             output += ": " + getNumVal();
         } else if (getBoolVal() != null) {

@@ -6,64 +6,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Lexer {
+    // Instance variables
     private final String source;
-    private final ArrayList<Lexeme> lexemes;
-    private final HashMap<String, TokenType> keywords;
+    private final ArrayList<Lexeme> lexemes = new ArrayList<>();
+    private final HashMap<String, TokenType> keywords = getKeywords();
 
-    private int currentPosition;
-    private int startOfCurrentLexeme;
-    private int lineNumber;
+    private int currentPosition = 0;
+    private int startOfCurrentLexeme = 0;
+    private int lineNumber = 1;
 
+    // Constructor
     public Lexer(String source) {
         this.source = source;
-        this.lexemes = new ArrayList<>();
-        this.keywords = getKeywords();
-
-        this.currentPosition = 0;
-        this.startOfCurrentLexeme = 0;
-        this.lineNumber = 1;
     }
 
+    // Keywords
     private HashMap<String, TokenType> getKeywords() {
         HashMap<String, TokenType> keywords = new HashMap<>();
-        keywords.put("‼️", BANGBANG);
-        keywords.put("{", OPEN_CURLY);
-        keywords.put("}", CLOSED_CURLY);
-        keywords.put("|", VERTICAL_PIPE);
-        keywords.put("[", OPEN_SQUARE);
-        keywords.put("]", CLOSED_SQUARE);
-        keywords.put("+", PLUS);
-        keywords.put("-", MINUS);
-        keywords.put("*", TIMES);
-        keywords.put("/", DIVIDE);
-        keywords.put("^", CARET);
-        keywords.put("%", PERCENT);
-        keywords.put("?", QUESTION);
-        keywords.put("~", APPROX);
-        keywords.put(">", GREATER);
-        keywords.put("<", LESS);
-        keywords.put("≥", GEQ);
-        keywords.put("≤", LEQ);
-        keywords.put(".", PERIOD);
-        keywords.put("\\", BACKSLASH);
-        keywords.put("<-", ASSIGNMENT);
-        keywords.put("!?", NOT_QUESTION);
-        keywords.put("!~", NOT_APPROX);
-        keywords.put("??", DOUBLE_QUESTION);
-        keywords.put(">?", GREATER_QUESTION);
-        keywords.put("<?", LESS_QUESTION);
-        keywords.put("//", DOUBLE_DIVIDE);
-        keywords.put("++", INCREMENT);
-        keywords.put("--", DECREMENT);
-        keywords.put("\\.", BACKSLASH_PERIOD);
-        keywords.put(".\\", PERIOD_BACKSLASH);
-        keywords.put("!??", NOT_DOUBLE_QUESTION);
-        keywords.put("+<-", PLUS_ASSIGNMENT);
-        keywords.put("-<-", MINUS_ASSIGNMENT);
-        keywords.put("*<-", TIMES_ASSIGNMENT);
-        keywords.put("/<-", DIVIDE_ASSIGNMENT);
-        keywords.put("^<-", CARET_ASSIGNMENT);
-        keywords.put("%<-", PERCENT_ASSIGNMENT);
         keywords.put("num", NUM_KEYWORD);
         keywords.put("str", STR_KEYWORD);
         keywords.put("tf", TF_KEYWORD);
@@ -73,6 +32,7 @@ public class Lexer {
         keywords.put("for", FOR_KEYWORD);
         keywords.put("when", WHEN_KEYWORD);
         keywords.put("loop", LOOP_KEYWORD);
+        keywords.put("change", CHANGE_KEYWORD);
         keywords.put("of", OF_KEYWORD);
         keywords.put("count", COUNT_KEYWORD);
         keywords.put("nothing", NOTHING_KEYWORD);
@@ -92,14 +52,221 @@ public class Lexer {
         return keywords;
     }
 
-    private void skipWhitespace() {
-
+    // Helpers
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(currentPosition);
     }
 
+    private char peekNext() {
+        if (currentPosition + 1 >= source.length()) return '\0';
+        return source.charAt(currentPosition + 1);
+    }
+
+    private boolean match(char expected) {
+        if (isAtEnd() || source.charAt(currentPosition) != expected) return false;
+        currentPosition++;
+        return true;
+    }
+
+    private char advance() {
+        char currentChar = source.charAt(currentPosition);
+        if (currentChar == '\n' || currentChar == '\r') lineNumber++;
+        currentPosition++;
+        return currentChar;
+    }
+
+    private boolean isAtEnd() {
+        return currentPosition >= source.length();
+    }
+
+    // Character classification
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                c == '_';
+    }
+
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
+
+    // Main lex function
     public ArrayList<Lexeme> lex() {
-        return this.lexemes;
+        while (!isAtEnd()) {
+            startOfCurrentLexeme = currentPosition;
+            Lexeme nextLexeme = getNextLexeme();
+            if (nextLexeme != null) lexemes.add(nextLexeme);
+        }
+        lexemes.add(new Lexeme(EOF, lineNumber));
+        return lexemes;
     }
 
+    private Lexeme getNextLexeme() {
+        char c = advance();
+        switch (c) {
+            // Whitespace
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+                return null;
+
+            // Strictly one character
+            case '‼':
+                return new Lexeme(BANGBANG, lineNumber);
+            case '{':
+                return new Lexeme(OPEN_CURLY, lineNumber);
+            case '}':
+                return new Lexeme(CLOSED_CURLY, lineNumber);
+            case '|':
+                return new Lexeme(VERTICAL_PIPE, lineNumber);
+            case '[':
+                return new Lexeme(OPEN_SQUARE, lineNumber);
+            case ']':
+                return new Lexeme(CLOSED_SQUARE, lineNumber);
+            case '(':
+                return new Lexeme(OPEN_PAREN, lineNumber);
+            case ')':
+                return new Lexeme(CLOSED_PAREN, lineNumber);
+            case '≥':
+                return new Lexeme(GEQ, lineNumber);
+            case '≤':
+                return new Lexeme(LEQ, lineNumber);
+            case '~':
+                return new Lexeme(APPROX, lineNumber);
+
+            // Multiple characters
+            case '+':
+                if (match('+')) return new Lexeme(INCREMENT, lineNumber);
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(PLUS_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(PLUS, lineNumber);
+            case '-':
+                if (match('-')) return new Lexeme(DECREMENT, lineNumber);
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(MINUS_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(MINUS, lineNumber);
+            case '*':
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(TIMES_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(TIMES, lineNumber);
+            case '/':
+                if (match('/')) return new Lexeme(DOUBLE_DIVIDE, lineNumber);
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(DIVIDE_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(DIVIDE, lineNumber);
+            case '^':
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(CARET_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(CARET, lineNumber);
+            case '%':
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(PERCENT_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(PERCENT, lineNumber);
+            case '?':
+                if (match('?')) return new Lexeme(DOUBLE_QUESTION, lineNumber);
+                return new Lexeme(QUESTION, lineNumber);
+            case '>':
+                if (match('?')) return new Lexeme(GREATER_QUESTION, lineNumber);
+                return new Lexeme(GREATER, lineNumber);
+            case '<':
+                if (match('-')) return new Lexeme(ASSIGNMENT, lineNumber);
+                if (match('?')) return new Lexeme(LESS_QUESTION, lineNumber);
+                return new Lexeme(LESS, lineNumber);
+            case '\\':
+                if (match('.')) return new Lexeme(BACKSLASH_PERIOD, lineNumber);
+                return new Lexeme(BACKSLASH, lineNumber);
+            case '.':
+                if (match('\\')) return new Lexeme(PERIOD_BACKSLASH, lineNumber);
+                return new Lexeme(PERIOD, lineNumber);
+            case '!':
+                if (match('?')) {
+                    if (match('?')) {
+                        return new Lexeme(NOT_DOUBLE_QUESTION, lineNumber);
+                    }
+                    return new Lexeme(NOT_QUESTION, lineNumber);
+                }
+                if (match('~')) return new Lexeme(NOT_APPROX, lineNumber);
+                error("Single ! character not supported, missing ?, ??, or ~");
+                break;
+
+            // Strings
+            case '"':
+                return lexString();
+
+            default:
+                if (isDigit(c)) return lexNumber();
+                else if (isAlpha(c)) return lexIdentifierOrKeyword();
+        }
+        return null;
+    }
+
+    // Lex helpers
+    private Lexeme lexNumber() {
+        while (isDigit(peek())) advance();
+        if (peek() == '.') {
+            if (!isDigit(peekNext())) {
+                error("Malformed real number (ends in decimal point)");
+                advance();
+                return null;
+            }
+            advance();
+            while (isDigit(peek())) advance();
+        }
+        String target = source.substring(startOfCurrentLexeme, currentPosition);
+        double number = Double.parseDouble(target);
+        return new Lexeme(NUMBER, lineNumber, number);
+    }
+
+    private Lexeme lexString() {
+        while (true) {
+            switch (peek()) {
+                case '\0':
+                    error("Malformed string (not closed properly)");
+                    return null;
+                case '"':
+                    String target = source.substring(startOfCurrentLexeme + 1, currentPosition);
+                    advance();
+                    return new Lexeme(STRING, lineNumber, target);
+                default:
+                    advance();
+            }
+        }
+    }
+
+    private Lexeme lexIdentifierOrKeyword() {
+        while (isAlphaNumeric(peek())) advance();
+        String text = source.substring(startOfCurrentLexeme, currentPosition);
+        TokenType type = keywords.get(text);
+
+        if (type == null) {
+            return new Lexeme(IDENTIFIER, lineNumber, text);
+        } else {
+            return new Lexeme(type, lineNumber);
+        }
+    }
+
+    // Errors
+    private void error(String message) {
+        System.err.println("Syntax error at line " + lineNumber + ": " + message);
+    }
+
+    private void error(Lexeme lexeme, String message) {
+        // error
+    }
+
+    // Print
     public void printLexemes() {
         System.out.println("Lexemes found: ");
         for (Lexeme lexeme : this.lexemes) {

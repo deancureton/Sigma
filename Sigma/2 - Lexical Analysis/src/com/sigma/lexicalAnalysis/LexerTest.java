@@ -26,7 +26,7 @@ public class LexerTest {
         System.out.println("Running " + path + "...");
         String sourceCode = getSourceCodeFromFile(path);
         Lexer lexer = new Lexer(sourceCode);
-        ArrayList<Lexeme> lexemes = lexer.lex();
+        lexer.lex();
         lexer.printLexemes();
     }
 
