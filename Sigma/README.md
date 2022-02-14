@@ -98,6 +98,25 @@ This block of code would output:
 4
 ```
 
+Switch cases are also supported in Sigma using the `change` keyword. Use it like this:
+```
+change {variable} |
+    case 1:
+        \ code block 1
+        fall {3}‼️
+    case 2:
+        \ code block 2
+        fall {}‼️
+    case 3:
+        \ code block 3
+        end {}‼️
+    nocase:
+        \ code block 4
+        end {}‼️
+|
+```
+In this case, the `fall` function directs the code to run the case in the argument (or just jumps to the next case if no argument is inputted). The `end` function breaks out. If `variable` was 1, block 1 and block 3 would run. If it was 2, block 2 and block 3 would run. If it was 3, only block 3 would run. Finally, if it was 4, only block 4 would run.
+
 # Operators
 
 Sigma is an infix language, and all arithmetic operators work the same as in any other language (including `^` for exponentials and `%` for modulus). However, since integer division isn't really a thing in Sigma since every number has the same type, integer division is represented by the symbol `//`. Consider `5.5 // 2.5`. In this case, Sigma would round both `5.5` and `2.5` down to `5` and `2`, and then perform integer division, giving `2` as a result.
@@ -140,9 +159,9 @@ remove {x 0}‼️
 ```
 The `add` function takes three parameters: `array`, `content` and `index` (optional), and adds the content to the array at whatever index signified (if `index` is empty, it adds to the end). `remove` takes in `array` and `index` and simply removes the element of the array at the designated index.
 
-# Comments
+# Comments and other characters
 
-To comment something out in Sigma, just use the `\` symbol. For multi-line comments, use `\.` and `.\`. 
+To comment something out in Sigma, just use the `\` symbol. For multi-line comments, use `\.` and `.\`. For whitespace in strings, `»` (Shift+Option+\) is tab, and `ˇ` (Shift+Option+T) is new line.
 
 # Keyword Overview
 
@@ -169,6 +188,9 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 | `<?`/`≤`         | less than or equal to?                         |
 | `loop`          | loop for some number of times                  |
 | `count`            | the number of times a loop has run             |
+| `change` | switch case |
+| `fall` | jump to new case in switch case |
+| `end` | break out of loop |
 | `//`               | integer division                               |
 | `if`/`butif`/`but` | if/else statements |
 | `aset` | set an element in an array |
