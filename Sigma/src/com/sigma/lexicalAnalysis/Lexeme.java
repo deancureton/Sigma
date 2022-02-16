@@ -1,7 +1,5 @@
 package com.sigma.lexicalAnalysis;
 
-import static com.sigma.lexicalAnalysis.TokenType.*;
-
 public class Lexeme {
     // Instance Variables
     private TokenType type;
@@ -60,7 +58,7 @@ public class Lexeme {
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
         if (getStringVal() != null) {
-            if (getType() == STRING) {
+            if (getType() == TokenType.STRING) {
                 output += ": \"" + getStringVal() + "\"";
             } else {
                 output += ": " + getStringVal();
