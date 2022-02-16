@@ -1,14 +1,13 @@
-package com.sigma.lexicalAnalysis;
+package com.sigma;
+
+import com.sigma.lexicalAnalysis.Lexer;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 
-import static com.sigma.lexicalAnalysis.TokenType.*;
-
-public class LexerTest {
+public class Sigma {
     public static void main(String[] args) throws IOException {
         try {
             if (args.length == 1) runFile(args[0]);

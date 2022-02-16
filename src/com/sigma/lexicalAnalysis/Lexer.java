@@ -198,7 +198,6 @@ public class Lexer {
                     return new Lexeme(NOT_QUESTION, lineNumber);
                 }
                 if (match('~')) return new Lexeme(NOT_APPROX, lineNumber);
-                error("Single ! character not supported, missing ?, ??, or ~");
                 break;
 
             // Strings
