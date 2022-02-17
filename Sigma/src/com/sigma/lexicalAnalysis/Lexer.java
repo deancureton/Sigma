@@ -1,5 +1,7 @@
 package com.sigma.lexicalAnalysis;
 
+import com.sigma.Sigma;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -210,11 +212,26 @@ public class Lexer {
     }
 
     // Lex helpers
+    // TODO fix multiple decimal points
     private Lexeme lexNumber() {
+        /*boolean hasDecimal = false;
+        int position = currentPosition;
+        while (true) {
+            if (isDigit(peek()) && peek() !== '.') {
+                advance();
+            } else if (peek() == '.' && !hasDecimal) {
+                if (!hasDecimal) {
+                    hasDecimal = true;
+                    advance();
+                } else {
+                    error("Malformed real number (has too many decimal points");
+                }
+            } else if
+        }*/
         while (isDigit(peek())) advance();
         if (peek() == '.') {
             if (!isDigit(peekNext())) {
-                error("Malformed real number (ends in decimal point)");
+                Sigma.syntaxError("Malformed real number (ends in decimal point)", lineNumber);
                 advance();
                 return null;
             }
@@ -230,7 +247,7 @@ public class Lexer {
         while (true) {
             switch (peek()) {
                 case '\0':
-                    error("Malformed string (not closed properly)");
+                    Sigma.syntaxError("Malformed string (not closed properly)", lineNumber);
                     return null;
                 case '"':
                     String target = source.substring(startOfCurrentLexeme + 1, currentPosition);
@@ -252,15 +269,6 @@ public class Lexer {
         } else {
             return new Lexeme(type, lineNumber);
         }
-    }
-
-    // Errors
-    private void error(String message) {
-        System.err.println("Syntax error at line " + lineNumber + ": " + message);
-    }
-
-    private void error(Lexeme lexeme, String message) {
-        // error
     }
 
     // Print
