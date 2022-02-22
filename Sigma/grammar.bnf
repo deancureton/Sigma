@@ -1,8 +1,7 @@
 // Dean Cureton, https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
 program ::= [statementList]
 statementList ::= statement+
-statement ::= variableDeclaration
-            | variableInitialization
+statement ::= ( variableDeclaration "‼️" )
             | ( assignment "‼️" )
             | functionDefinition
             | loop
@@ -10,10 +9,9 @@ statement ::= variableDeclaration
             | comment
             | ( expression "‼️" )
 
-variableDeclaration ::= type IDENTIFIER "‼️"
-variableInitialization ::= strictType regularAssignment "‼️"
+variableDeclaration ::= "var" IDENTIFIER [regularAssignment]
 
-assignment ::= unaryAssignment | regularAssignment
+assignment ::= IDENTIFIER (unaryAssignment | regularAssignment)
 
 functionDefinition ::= "func" IDENTIFIER "<-" functionArguments block "‼️"
 functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
@@ -21,32 +19,28 @@ callArguments ::= primary*
 
 loop ::= forLoop | foreachLoop | whenLoop | loopLoop
 
-forLoop ::= "for" "{" variableInitialization "‼️" expression "‼️" assignment "}" block
+forLoop ::= "for" "{" variableDeclaration "‼️" expression "‼️" assignment "}" block
 foreachLoop ::= "foreach" "{" "var" IDENTIFIER "of" IDENTIFIER "}" block
 whenLoop ::= "when" "{" expression "}" block
 loopLoop ::= "loop" "{" NUMBER "}" block
 
 ifStatement ::= "if" "{" expression "}" block butifStatement* [butStatement]
 butifStatement ::= "butif" "{" expression "}" block
-butStatement ::= "butif" "{" expression "}" block
+butStatement ::= "but" "{" expression "}" block
 
 comment ::= singleLineComment | multiLineComment
 singleLineComment ::= "\\" COMMENTTEXT
 multiLineComment ::= "\\." COMMENTTEXT ".\\"
 
-type ::= "var" | strictType
-strictType ::= "str" | "num" | "tf" | "arr"
+type ::= "str" | "num" | "tf" | "arr"
 
-unaryAssignment ::= increment | decrement
-increment ::= IDENTIFIER "++"
-decrement ::= IDENTIFIER "--"
+unaryAssignment ::= "++" | "--"
 
-regularAssignment ::= IDENTIFIER ("<-" | operatorAssignment) expression
+regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
 
-functionArguments ::= regularFunctionArgument* optionalFunctionArgument*
-regularFunctionArgument ::= type IDENTIFIER
-optionalFunctionArgument ::= "[" type IDENTIFIER "]"
+functionArguments ::= functionArgument* ["[" functionArgument+ "]"]
+functionArgument ::= "var" IDENTIFIER
 
 block ::= "|" [statementList] "|"
 
@@ -57,11 +51,11 @@ expression ::= binaryExpression
 binaryExpression ::= primary binaryOperator primary
                    | primary binaryOperator binaryExpression
 
-primary ::= NUMBER | IDENTIFIER | STRING | boolean | unaryExpression | array | cast | functionCall
+primary ::= NUMBER | IDENTIFIER | STRING | boolean | array | cast | functionCall
 
-unaryExpression ::= unaryAssignment | negationExpression | minusExpression | parenthesizedExpression
+unaryExpression ::= negationExpression | minusExpression | parenthesizedExpression | (primary unaryAssignment)
 parenthesizedExpression ::= "{" expression "}"
-negationExpression ::= "!" expression
+negationExpression ::= ("!" | "not") expression
 minusExpression ::= "-" expression
 
 binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
@@ -74,4 +68,4 @@ boolean ::= "true" | "false"
 array ::= "(" arrayElements ")"
 arrayElements ::= primary*
 
-cast ::= IDENTIFIER "." strictType
+cast ::= IDENTIFIER "." type

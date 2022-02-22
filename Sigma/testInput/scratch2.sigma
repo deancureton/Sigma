@@ -1,0 +1,17 @@
+var x <- 3‼
+x <- "str"‼
+func x <- var num1 var num2 [var num3] |
+|‼
+for { var x <- 3‼ x < 5‼ x++ } |
+|
+if {5 + 5} |
+| butif {3} |
+| butif {-3} |
+| butif {!3} |
+| butif {{{{3}}}} |
+| but {lol++} |
+|
+
+\. comment
+.\
+3+4‼

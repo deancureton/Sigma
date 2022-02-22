@@ -5,8 +5,6 @@ import com.sigma.Sigma;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import com.sigma.lexicalAnalysis.TokenType;
-
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
 
@@ -38,7 +36,6 @@ public class Lexer {
         keywords.put("foreach", FOREACH_KEYWORD);
         keywords.put("when", WHEN_KEYWORD);
         keywords.put("loop", LOOP_KEYWORD);
-        keywords.put("change", CHANGE_KEYWORD);
         keywords.put("of", OF_KEYWORD);
         keywords.put("count", COUNT_KEYWORD);
         keywords.put("nothing", NOTHING_KEYWORD);
@@ -196,8 +193,7 @@ public class Lexer {
                 if (match('?')) return new Lexeme(LESS_QUESTION, lineNumber);
                 return new Lexeme(LESS, lineNumber);
             case '\\':
-                if (match('.')) return new Lexeme(BACKSLASH_PERIOD, lineNumber);
-                return new Lexeme(BACKSLASH, lineNumber);
+                return lexComment();
             case '.':
                 if (match('\\')) return new Lexeme(PERIOD_BACKSLASH, lineNumber);
                 return new Lexeme(PERIOD, lineNumber);
@@ -223,31 +219,33 @@ public class Lexer {
     }
 
     // Lex helpers
-    // TODO fix multiple decimal points
     private Lexeme lexNumber() {
-        /*boolean hasDecimal = false;
-        int position = currentPosition;
+        boolean hasDecimal = false;
+        boolean hasError = false;
         while (true) {
-            if (isDigit(peek()) && peek() !== '.') {
+            if (isDigit(peek())) {
                 advance();
-            } else if (peek() == '.' && !hasDecimal) {
+            } else if (peek() == '.') {
+                if (!isDigit(peekNext())) {
+                    Sigma.syntaxError("Malformed real number (ends in decimal point)", lineNumber);
+                    advance();
+                    return null;
+                }
                 if (!hasDecimal) {
                     hasDecimal = true;
                     advance();
                 } else {
-                    error("Malformed real number (has too many decimal points");
+                    hasError = true;
+                    advance();
                 }
-            } else if
-        }*/
-        while (isDigit(peek())) advance();
-        if (peek() == '.') {
-            if (!isDigit(peekNext())) {
-                Sigma.syntaxError("Malformed real number (ends in decimal point)", lineNumber);
-                advance();
-                return null;
+            } else {
+                break;
             }
+        }
+        if (hasError) {
+            Sigma.syntaxError("Malformed real number (too many decimal points)", lineNumber);
             advance();
-            while (isDigit(peek())) advance();
+            return null;
         }
         String target = source.substring(startOfCurrentLexeme, currentPosition);
         double number = Double.parseDouble(target);
@@ -257,15 +255,16 @@ public class Lexer {
     private Lexeme lexString() {
         while (true) {
             switch (peek()) {
-                case '\0':
+                case '\0' -> {
                     Sigma.syntaxError("Malformed string (not closed properly)", lineNumber);
                     return null;
-                case '"':
+                }
+                case '"' -> {
                     String target = source.substring(startOfCurrentLexeme + 1, currentPosition);
                     advance();
                     return new Lexeme(STRING, lineNumber, target);
-                default:
-                    advance();
+                }
+                default -> advance();
             }
         }
     }
@@ -279,6 +278,31 @@ public class Lexer {
             return new Lexeme(IDENTIFIER, lineNumber, text);
         } else {
             return new Lexeme(type, lineNumber);
+        }
+    }
+
+    private Lexeme lexComment() {
+        if (peek() == '.') {
+            while (true) {
+                advance();
+                if (peek() == '.' && peekNext() == '\\') {
+                    advance();
+                    advance();
+                    String target = source.substring(startOfCurrentLexeme, currentPosition);
+                    return new Lexeme(COMMENT, lineNumber, target);
+                } else if (peek() == '\0') {
+                    Sigma.syntaxError("Unclosed comment", lineNumber);
+                    return null;
+                }
+            }
+        } else {
+            while (true) {
+                if (peek() == '\n' || peek() == '\0') {
+                    String target = source.substring(startOfCurrentLexeme, currentPosition);
+                    return new Lexeme(COMMENT, lineNumber, target);
+                }
+                advance();
+            }
         }
     }
 

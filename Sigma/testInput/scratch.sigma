@@ -1,40 +1,41 @@
-‼
-{}|[]()
-+-*/
-^%
-?~><≥≤
-.
-\
-<-
-!?!~
-!
-??>?<?
-////<-
-++--
-\..\
-!??
-+<--<-*<-/<-
-^<-%<-
-someIdentifier
-20.348
-3041.3
-203967
-"String"
-"Also a string"
-"Seohtj.ghw023u9qpddkv.sdb,n5y3469we89\naudisfhndfb.-=-=94358"
-num str tf var func arr
-for foreach when loop change
-of count
-nothing
-and or not
-nand nor xor xnor implies
-if butif but
-true fals
+var x <- 3‼
+var x = 3‼
+x <- "str"‼
+x = "str"
+func x <- var num1 var num2 [var num3] |
+|‼
+x { 1 2 3 }‼
 
-¿
-30.
-20.2.2
-x
-"
-sdjkgkjasdh
-sdkjfh
+x(1)‼
+for { var x <- 3‼ x < 5‼ x++ } |
+    \code
+    !3‼
+    -3‼
+    {3+4}‼
+|
+
+foreach { var x of y } |
+    a +<- 3‼
+|
+when { not a.num  } |
+    \code
+|
+loop { 3 } |
+    \. code .\
+|
+
+if {5 + 5} |
+| butif {3} |
+| butif {-3} |
+| butif {!3} |
+| butif {{{{3}}}} |
+| but {lol++} |
+|
+
+\. comment
+.\
+3+4+5+6‼
+3‼
+3++‼
+
+(1, "yeah", true, 4)‼
