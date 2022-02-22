@@ -206,6 +206,9 @@ public class Lexer {
                 }
                 if (match('~')) return new Lexeme(NOT_APPROX, lineNumber);
                 return new Lexeme(EXCLAMATION, lineNumber);
+            case '=':
+                Sigma.syntaxError("Equals sign", lineNumber);
+                break;
 
             // Strings
             case '"':
