@@ -2,6 +2,7 @@ package com.sigma;
 
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.Lexer;
+import com.sigma.recognizing.Recognizer;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -32,6 +33,7 @@ public class Sigma {
         Lexer lexer = new Lexer(sourceCode);
         lexer.lex();
         lexer.printLexemes();
+        Recognizer recognizer = new Recognizer(lexer.lex());
         printErrors();
     }
 

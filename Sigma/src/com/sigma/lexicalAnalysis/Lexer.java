@@ -5,6 +5,11 @@ import com.sigma.Sigma;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import com.sigma.lexicalAnalysis.TokenType;
+
+import static com.sigma.lexicalAnalysis.TokenType.*;
+
+
 public class Lexer {
     // Instance variables
     private final String source;
@@ -23,32 +28,33 @@ public class Lexer {
     // Keywords
     private HashMap<String, TokenType> getKeywords() {
         HashMap<String, TokenType> keywords = new HashMap<>();
-        keywords.put("num", TokenType.NUM_KEYWORD);
-        keywords.put("str", TokenType.STR_KEYWORD);
-        keywords.put("tf", TokenType.TF_KEYWORD);
-        keywords.put("var", TokenType.VAR_KEYWORD);
-        keywords.put("func", TokenType.FUNC_KEYWORD);
-        keywords.put("arr", TokenType.ARR_KEYWORD);
-        keywords.put("for", TokenType.FOR_KEYWORD);
-        keywords.put("when", TokenType.WHEN_KEYWORD);
-        keywords.put("loop", TokenType.LOOP_KEYWORD);
-        keywords.put("change", TokenType.CHANGE_KEYWORD);
-        keywords.put("of", TokenType.OF_KEYWORD);
-        keywords.put("count", TokenType.COUNT_KEYWORD);
-        keywords.put("nothing", TokenType.NOTHING_KEYWORD);
-        keywords.put("and", TokenType.AND_KEYWORD);
-        keywords.put("or", TokenType.OR_KEYWORD);
-        keywords.put("not", TokenType.NOT_KEYWORD);
-        keywords.put("nand", TokenType.NAND_KEYWORD);
-        keywords.put("nor", TokenType.NOR_KEYWORD);
-        keywords.put("xor", TokenType.XOR_KEYWORD);
-        keywords.put("xnor", TokenType.XNOR_KEYWORD);
-        keywords.put("implies", TokenType.IMPLIES_KEYWORD);
-        keywords.put("if", TokenType.IF_KEYWORD);
-        keywords.put("butif", TokenType.BUTIF_KEYWORD);
-        keywords.put("but", TokenType.BUT_KEYWORD);
-        keywords.put("true", TokenType.TRUE_KEYWORD);
-        keywords.put("fals", TokenType.FALS_KEYWORD);
+        keywords.put("num", NUM_KEYWORD);
+        keywords.put("str", STR_KEYWORD);
+        keywords.put("tf", TF_KEYWORD);
+        keywords.put("var", VAR_KEYWORD);
+        keywords.put("func", FUNC_KEYWORD);
+        keywords.put("arr", ARR_KEYWORD);
+        keywords.put("for", FOR_KEYWORD);
+        keywords.put("foreach", FOREACH_KEYWORD);
+        keywords.put("when", WHEN_KEYWORD);
+        keywords.put("loop", LOOP_KEYWORD);
+        keywords.put("change", CHANGE_KEYWORD);
+        keywords.put("of", OF_KEYWORD);
+        keywords.put("count", COUNT_KEYWORD);
+        keywords.put("nothing", NOTHING_KEYWORD);
+        keywords.put("and", AND_KEYWORD);
+        keywords.put("or", OR_KEYWORD);
+        keywords.put("not", NOT_KEYWORD);
+        keywords.put("nand", NAND_KEYWORD);
+        keywords.put("nor", NOR_KEYWORD);
+        keywords.put("xor", XOR_KEYWORD);
+        keywords.put("xnor", XNOR_KEYWORD);
+        keywords.put("implies", IMPLIES_KEYWORD);
+        keywords.put("if", IF_KEYWORD);
+        keywords.put("butif", BUTIF_KEYWORD);
+        keywords.put("but", BUT_KEYWORD);
+        keywords.put("true", TRUE_KEYWORD);
+        keywords.put("fals", FALS_KEYWORD);
         return keywords;
     }
 
@@ -102,7 +108,7 @@ public class Lexer {
             Lexeme nextLexeme = getNextLexeme();
             if (nextLexeme != null) lexemes.add(nextLexeme);
         }
-        lexemes.add(new Lexeme(TokenType.EOF, lineNumber));
+        lexemes.add(new Lexeme(EOF, lineNumber));
         return lexemes;
     }
 
@@ -118,87 +124,92 @@ public class Lexer {
 
             // Strictly one character
             case '‼':
-                return new Lexeme(TokenType.BANGBANG, lineNumber);
+                return new Lexeme(BANGBANG, lineNumber);
             case '{':
-                return new Lexeme(TokenType.OPEN_CURLY, lineNumber);
+                return new Lexeme(OPEN_CURLY, lineNumber);
             case '}':
-                return new Lexeme(TokenType.CLOSED_CURLY, lineNumber);
+                return new Lexeme(CLOSED_CURLY, lineNumber);
             case '|':
-                return new Lexeme(TokenType.VERTICAL_PIPE, lineNumber);
+                return new Lexeme(VERTICAL_PIPE, lineNumber);
             case '[':
-                return new Lexeme(TokenType.OPEN_SQUARE, lineNumber);
+                return new Lexeme(OPEN_SQUARE, lineNumber);
             case ']':
-                return new Lexeme(TokenType.CLOSED_SQUARE, lineNumber);
+                return new Lexeme(CLOSED_SQUARE, lineNumber);
             case '(':
-                return new Lexeme(TokenType.OPEN_PAREN, lineNumber);
+                return new Lexeme(OPEN_PAREN, lineNumber);
             case ')':
-                return new Lexeme(TokenType.CLOSED_PAREN, lineNumber);
+                return new Lexeme(CLOSED_PAREN, lineNumber);
             case '≥':
-                return new Lexeme(TokenType.GEQ, lineNumber);
+                return new Lexeme(GEQ, lineNumber);
             case '≤':
-                return new Lexeme(TokenType.LEQ, lineNumber);
+                return new Lexeme(LEQ, lineNumber);
             case '~':
-                return new Lexeme(TokenType.APPROX, lineNumber);
+                return new Lexeme(APPROX, lineNumber);
 
             // Multiple characters
             case '+':
-                if (match('+')) return new Lexeme(TokenType.INCREMENT, lineNumber);
+                if (match('+')) return new Lexeme(INCREMENT, lineNumber);
                 if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.PLUS_ASSIGNMENT, lineNumber);
+                    if (match('-')) return new Lexeme(PLUS_ASSIGNMENT, lineNumber);
                 }
-                return new Lexeme(TokenType.PLUS, lineNumber);
+                return new Lexeme(PLUS, lineNumber);
             case '-':
-                if (match('-')) return new Lexeme(TokenType.DECREMENT, lineNumber);
+                if (match('-')) return new Lexeme(DECREMENT, lineNumber);
                 if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.MINUS_ASSIGNMENT, lineNumber);
+                    if (match('-')) return new Lexeme(MINUS_ASSIGNMENT, lineNumber);
                 }
-                return new Lexeme(TokenType.MINUS, lineNumber);
+                return new Lexeme(MINUS, lineNumber);
             case '*':
                 if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.TIMES_ASSIGNMENT, lineNumber);
+                    if (match('-')) return new Lexeme(TIMES_ASSIGNMENT, lineNumber);
                 }
-                return new Lexeme(TokenType.TIMES, lineNumber);
+                return new Lexeme(TIMES, lineNumber);
             case '/':
-                if (match('/')) return new Lexeme(TokenType.DOUBLE_DIVIDE, lineNumber);
-                if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.DIVIDE_ASSIGNMENT, lineNumber);
+                if (match('/')) {
+                    if (match('<') && match('-')) {
+                        return new Lexeme(DOUBLE_DIVIDE_ASSIGNMENT, lineNumber);
+                    }
+                    return new Lexeme(DOUBLE_DIVIDE, lineNumber);
                 }
-                return new Lexeme(TokenType.DIVIDE, lineNumber);
+                if (match('<')) {
+                    if (match('-')) return new Lexeme(DIVIDE_ASSIGNMENT, lineNumber);
+                }
+                return new Lexeme(DIVIDE, lineNumber);
             case '^':
                 if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.CARET_ASSIGNMENT, lineNumber);
+                    if (match('-')) return new Lexeme(CARET_ASSIGNMENT, lineNumber);
                 }
-                return new Lexeme(TokenType.CARET, lineNumber);
+                return new Lexeme(CARET, lineNumber);
             case '%':
                 if (match('<')) {
-                    if (match('-')) return new Lexeme(TokenType.PERCENT_ASSIGNMENT, lineNumber);
+                    if (match('-')) return new Lexeme(PERCENT_ASSIGNMENT, lineNumber);
                 }
-                return new Lexeme(TokenType.PERCENT, lineNumber);
+                return new Lexeme(PERCENT, lineNumber);
             case '?':
-                if (match('?')) return new Lexeme(TokenType.DOUBLE_QUESTION, lineNumber);
-                return new Lexeme(TokenType.QUESTION, lineNumber);
+                if (match('?')) return new Lexeme(DOUBLE_QUESTION, lineNumber);
+                return new Lexeme(QUESTION, lineNumber);
             case '>':
-                if (match('?')) return new Lexeme(TokenType.GREATER_QUESTION, lineNumber);
-                return new Lexeme(TokenType.GREATER, lineNumber);
+                if (match('?')) return new Lexeme(GREATER_QUESTION, lineNumber);
+                return new Lexeme(GREATER, lineNumber);
             case '<':
-                if (match('-')) return new Lexeme(TokenType.ASSIGNMENT, lineNumber);
-                if (match('?')) return new Lexeme(TokenType.LESS_QUESTION, lineNumber);
-                return new Lexeme(TokenType.LESS, lineNumber);
+                if (match('-')) return new Lexeme(ASSIGNMENT, lineNumber);
+                if (match('?')) return new Lexeme(LESS_QUESTION, lineNumber);
+                return new Lexeme(LESS, lineNumber);
             case '\\':
-                if (match('.')) return new Lexeme(TokenType.BACKSLASH_PERIOD, lineNumber);
-                return new Lexeme(TokenType.BACKSLASH, lineNumber);
+                if (match('.')) return new Lexeme(BACKSLASH_PERIOD, lineNumber);
+                return new Lexeme(BACKSLASH, lineNumber);
             case '.':
-                if (match('\\')) return new Lexeme(TokenType.PERIOD_BACKSLASH, lineNumber);
-                return new Lexeme(TokenType.PERIOD, lineNumber);
+                if (match('\\')) return new Lexeme(PERIOD_BACKSLASH, lineNumber);
+                return new Lexeme(PERIOD, lineNumber);
             case '!':
                 if (match('?')) {
                     if (match('?')) {
-                        return new Lexeme(TokenType.NOT_DOUBLE_QUESTION, lineNumber);
+                        return new Lexeme(NOT_DOUBLE_QUESTION, lineNumber);
                     }
-                    return new Lexeme(TokenType.NOT_QUESTION, lineNumber);
+                    return new Lexeme(NOT_QUESTION, lineNumber);
                 }
-                if (match('~')) return new Lexeme(TokenType.NOT_APPROX, lineNumber);
-                break;
+                if (match('~')) return new Lexeme(NOT_APPROX, lineNumber);
+                return new Lexeme(EXCLAMATION, lineNumber);
 
             // Strings
             case '"':
@@ -240,7 +251,7 @@ public class Lexer {
         }
         String target = source.substring(startOfCurrentLexeme, currentPosition);
         double number = Double.parseDouble(target);
-        return new Lexeme(TokenType.NUMBER, lineNumber, number);
+        return new Lexeme(NUMBER, lineNumber, number);
     }
 
     private Lexeme lexString() {
@@ -252,7 +263,7 @@ public class Lexer {
                 case '"':
                     String target = source.substring(startOfCurrentLexeme + 1, currentPosition);
                     advance();
-                    return new Lexeme(TokenType.STRING, lineNumber, target);
+                    return new Lexeme(STRING, lineNumber, target);
                 default:
                     advance();
             }
@@ -265,7 +276,7 @@ public class Lexer {
         TokenType type = keywords.get(text);
 
         if (type == null) {
-            return new Lexeme(TokenType.IDENTIFIER, lineNumber, text);
+            return new Lexeme(IDENTIFIER, lineNumber, text);
         } else {
             return new Lexeme(type, lineNumber);
         }

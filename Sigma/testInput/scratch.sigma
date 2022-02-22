@@ -7,8 +7,9 @@
 \
 <-
 !?!~
+!
 ??>?<?
-//
+////<-
 ++--
 \..\
 !??
@@ -22,7 +23,7 @@ someIdentifier
 "Also a string"
 "Seohtj.ghw023u9qpddkv.sdb,n5y3469we89\naudisfhndfb.-=-=94358"
 num str tf var func arr
-for when loop change
+for foreach when loop change
 of count
 nothing
 and or not
@@ -31,7 +32,6 @@ if butif but
 true fals
 
 ¿
-!
 30.
 20.2.2
 x
