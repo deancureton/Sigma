@@ -11,7 +11,7 @@ statement ::= ( variableDeclaration "‼️" )
 
 variableDeclaration ::= "var" IDENTIFIER [regularAssignment]
 
-assignment ::= IDENTIFIER (unaryAssignment | regularAssignment)
+assignment ::= IDENTIFIER regularAssignment | unaryOperator IDENTIFIER
 
 functionDefinition ::= "func" IDENTIFIER "<-" functionArguments block "‼️"
 functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
@@ -34,7 +34,7 @@ multiLineComment ::= "\\." COMMENTTEXT ".\\"
 
 type ::= "str" | "num" | "tf" | "arr"
 
-unaryAssignment ::= "++" | "--"
+unaryOperator ::= "++" | "--" | "not" | "!"
 
 regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
@@ -46,22 +46,20 @@ block ::= "|" [statementList] "|"
 
 expression ::= binaryExpression
              | primary
-             | unaryExpression
 
 binaryExpression ::= primary binaryOperator primary
                    | primary binaryOperator binaryExpression
 
-primary ::= NUMBER | IDENTIFIER | STRING | boolean | array | cast | functionCall
+primary ::= unaryExpression | NUMBER | IDENTIFIER | STRING | boolean | array | cast | functionCall
 
-unaryExpression ::= negationExpression | minusExpression | parenthesizedExpression | (primary unaryAssignment)
+unaryExpression ::=  minusExpression | parenthesizedExpression | (unaryOperator primary)
 parenthesizedExpression ::= "{" expression "}"
-negationExpression ::= ("!" | "not") expression
 minusExpression ::= "-" expression
 
 binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
 binaryArithmeticOperator ::= "+" | "-" | "/" | "*" | "//" | "^" | "%"
 binaryComparator ::= ">" | "<" | ">?" | "<?" | "≥" | "≤" | "?" | "!?" | "??" | "!??" | "~" | "!~"
-binaryBooleanOperator ::= "and" | "or" | "not" | "nand" | "nor" | "xor" | "xnor" | "implies"
+binaryBooleanOperator ::= "and" | "or" | "nand" | "nor" | "xor" | "xnor" | "implies"
 
 boolean ::= "true" | "false"
 

@@ -83,10 +83,13 @@ public class Recognizer {
 
     private void assignment() {
         if (printDebugMessages) System.out.println("-- assignment --");
-        consume(IDENTIFIER);
-        if (unaryAssignmentPending()) unaryAssignment();
-        else if (regularAssignmentPending()) regularAssignment();
-        else error("Expected assignment operator.");
+        if (unaryOperatorPending()) {
+            unaryOperator();
+            consume(IDENTIFIER);
+        } else if (check(IDENTIFIER)) {
+            consume(IDENTIFIER);
+            regularAssignment();
+        } else error("Expected assignment operator.");
     }
 
     private void functionDefinition() {
@@ -115,12 +118,10 @@ public class Recognizer {
         expression();
         consume(CLOSED_CURLY);
         block();
-        boolean hasButStatement = false;
         while (butifStatementPending()) {
             butifStatement();
-            hasButStatement = true;
         }
-        if (hasButStatement || butStatementPending()) butStatement();
+        if (butStatementPending()) butStatement();
     }
 
     private void comment() {
@@ -131,7 +132,6 @@ public class Recognizer {
     private void expression() {
         if (printDebugMessages) System.out.println("-- expression --");
         if (binaryExpressionPending()) binaryExpression();
-        else if (unaryExpressionPending()) unaryExpression();
         else if (primaryPending()) primary();
         else error("Expression expected.");
     }
@@ -153,10 +153,12 @@ public class Recognizer {
         expression();
     }
 
-    private void unaryAssignment() {
-        if (printDebugMessages) System.out.println("-- unaryAssignment --");
+    private void unaryOperator() {
+        if (printDebugMessages) System.out.println("-- unaryOperator --");
         if (check(INCREMENT)) consume(INCREMENT);
         else if (check(DECREMENT)) consume(DECREMENT);
+        else if (check(NOT_KEYWORD)) consume(NOT_KEYWORD);
+        else if (check(EXCLAMATION)) consume(EXCLAMATION);
         else error("Expected unary assignment operator.");
     }
 
@@ -252,7 +254,8 @@ public class Recognizer {
 
     private void primary() {
         if (printDebugMessages) System.out.println("-- primary --");
-        if (check(NUMBER)) consume(NUMBER);
+        if (unaryExpressionPending()) unaryExpression();
+        else if (check(NUMBER)) consume(NUMBER);
         else if (functionCallPending()) functionCall();
         else if (castPending()) cast();
         else if (check(IDENTIFIER)) consume(IDENTIFIER);
@@ -264,11 +267,10 @@ public class Recognizer {
 
     private void unaryExpression() {
         if (printDebugMessages) System.out.println("-- unaryExpression --");
-        if (primaryPending()) {
+        if (unaryOperatorPending()) {
+            unaryOperator();
             primary();
-            unaryAssignment();
-        } else if (negationExpressionPending()) negationExpression();
-        else if (minusExpressionPending()) minusExpression();
+        } else if (minusExpressionPending()) minusExpression();
         else if (parenthesizedExpressionPending()) parenthesizedExpression();
         else error("Expected unary expression.");
     }
@@ -328,13 +330,6 @@ public class Recognizer {
         consume(CLOSED_CURLY);
     }
 
-    private void negationExpression() {
-        if (printDebugMessages) System.out.println("-- negationExpression --");
-        if (check(EXCLAMATION)) consume(EXCLAMATION);
-        if (check(NOT_KEYWORD)) consume(NOT_KEYWORD);
-        expression();
-    }
-
     private void parenthesizedExpression() {
         if (printDebugMessages) System.out.println("-- parenthesizedExpression --");
         consume(OPEN_CURLY);
@@ -375,7 +370,6 @@ public class Recognizer {
         if (printDebugMessages) System.out.println("-- binaryBooleanOperator --");
         if (check(AND_KEYWORD)) consume(AND_KEYWORD);
         else if (check(OR_KEYWORD)) consume(OR_KEYWORD);
-        else if (check(NOT_KEYWORD)) consume(NOT_KEYWORD);
         else if (check(NAND_KEYWORD)) consume(NAND_KEYWORD);
         else if (check(NOR_KEYWORD)) consume(NOR_KEYWORD);
         else if (check(XOR_KEYWORD)) consume(XOR_KEYWORD);
@@ -420,7 +414,7 @@ public class Recognizer {
     }
 
     private boolean assignmentPending() {
-        return check(IDENTIFIER) && unaryAssignmentPendingNext() || regularAssignmentPendingNext();
+        return (check(IDENTIFIER) && regularAssignmentPendingNext()) || (unaryOperatorPending() && checkNext(IDENTIFIER));
     }
 
     private boolean functionDefinitionPending() {
@@ -448,7 +442,7 @@ public class Recognizer {
     }
 
     private boolean expressionPending() {
-        return binaryExpressionPending() || primaryPending() || unaryExpressionPending();
+        return binaryExpressionPending() || primaryPending();
     }
 
     private boolean typePending() {
@@ -459,12 +453,8 @@ public class Recognizer {
         return check(STR_KEYWORD) || check(NUM_KEYWORD) || check(TF_KEYWORD) || check(ARR_KEYWORD);
     }
 
-    private boolean unaryAssignmentPending() {
-        return check(INCREMENT) || check(DECREMENT);
-    }
-
-    private boolean unaryAssignmentPendingNext() {
-        return checkNext(INCREMENT) || checkNext(DECREMENT);
+    private boolean unaryOperatorPending() {
+        return check(INCREMENT) || check(DECREMENT) || check(NOT_KEYWORD) || check(EXCLAMATION);
     }
 
     private boolean regularAssignmentPending() {
@@ -496,11 +486,11 @@ public class Recognizer {
     }
 
     private boolean primaryPending() {
-        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || booleanPending() || arrayPending() || castPending() || functionCallPending();
+        return unaryExpressionPending() || check(NUMBER) || check(IDENTIFIER) || check(STRING) || booleanPending() || arrayPending() || castPending() || functionCallPending();
     }
 
     private boolean unaryExpressionPending() {
-        return (primaryPending() && unaryAssignmentPendingNext()) || negationExpressionPending() || minusExpressionPending() || parenthesizedExpressionPending();
+        return unaryOperatorPending() || minusExpressionPending() || parenthesizedExpressionPending();
     }
 
     private boolean operatorAssignmentPending() {
@@ -617,10 +607,6 @@ public class Recognizer {
 
     private boolean functionArgumentPending() {
         return typePending() && checkNext(IDENTIFIER);
-    }
-
-    private boolean negationExpressionPending() {
-        return check(EXCLAMATION) || check(NOT_KEYWORD);
     }
 
     private boolean minusExpressionPending() {
