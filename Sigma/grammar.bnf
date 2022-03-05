@@ -1,4 +1,8 @@
-// Dean Cureton, https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
+// https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
+
+// TODO add switch (change) statement
+// TODO fix booleans
+
 program ::= [statementList]
 statementList ::= statement+
 statement ::= ( variableDeclaration "‼️" )
@@ -42,7 +46,7 @@ operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
 functionArguments ::= functionArgument* ["[" functionArgument+ "]"]
 functionArgument ::= "var" IDENTIFIER
 
-block ::= "|" [statementList] "|"
+block ::= "»" [statementList] "«"
 
 expression ::= binaryExpression
              | primary

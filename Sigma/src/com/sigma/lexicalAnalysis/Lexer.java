@@ -126,8 +126,10 @@ public class Lexer {
                 return new Lexeme(OPEN_CURLY, lineNumber);
             case '}':
                 return new Lexeme(CLOSED_CURLY, lineNumber);
-            case '|':
-                return new Lexeme(VERTICAL_PIPE, lineNumber);
+            case '»':
+                return new Lexeme(DOUBLE_FORWARD, lineNumber);
+            case '«':
+                return new Lexeme(DOUBLE_BACKWARD, lineNumber);
             case '[':
                 return new Lexeme(OPEN_SQUARE, lineNumber);
             case ']':

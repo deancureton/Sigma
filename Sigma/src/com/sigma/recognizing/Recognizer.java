@@ -114,9 +114,7 @@ public class Recognizer {
     private void ifStatement() {
         if (printDebugMessages) System.out.println("-- ifStatement --");
         consume(IF_KEYWORD);
-        consume(OPEN_CURLY);
-        expression();
-        consume(CLOSED_CURLY);
+        parenthesizedExpression();
         block();
         while (butifStatementPending()) {
             butifStatement();
@@ -175,11 +173,11 @@ public class Recognizer {
 
     private void block() {
         if (printDebugMessages) System.out.println("-- block --");
-        consume(VERTICAL_PIPE);
+        consume(DOUBLE_FORWARD);
         while (statementListPending()) {
             statementList();
         }
-        consume(VERTICAL_PIPE);
+        consume(DOUBLE_BACKWARD);
     }
 
     private void forLoop() {
@@ -210,9 +208,7 @@ public class Recognizer {
     private void whenLoop() {
         if (printDebugMessages) System.out.println("-- whenLoop --");
         consume(WHEN_KEYWORD);
-        consume(OPEN_CURLY);
-        expression();
-        consume(CLOSED_CURLY);
+        parenthesizedExpression();
         block();
     }
 
@@ -228,18 +224,14 @@ public class Recognizer {
     private void butifStatement() {
         if (printDebugMessages) System.out.println("-- butifStatement --");
         consume(BUTIF_KEYWORD);
-        consume(OPEN_CURLY);
-        expression();
-        consume(CLOSED_CURLY);
+        parenthesizedExpression();
         block();
     }
 
     private void butStatement() {
         if (printDebugMessages) System.out.println("-- butStatement --");
         consume(BUT_KEYWORD);
-        consume(OPEN_CURLY);
-        expression();
-        consume(CLOSED_CURLY);
+        parenthesizedExpression();
         block();
     }
 
