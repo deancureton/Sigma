@@ -4,13 +4,12 @@ import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
-import javax.swing.text.Caret;
 import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
 public class Recognizer {
-    private static final boolean printDebugMessages = true;
+    private static final boolean printDebugMessages = false;
     private final ArrayList<Lexeme> lexemes;
     private Lexeme currentLexeme;
     private int nextLexemeIndex;
@@ -32,358 +31,468 @@ public class Recognizer {
         return lexemes.get(nextLexemeIndex).getType() == type;
     }
 
-    private void consume(TokenType expected) {
+    private Lexeme consume(TokenType expected) {
         if (check(expected)) {
-            advance();
-            if (printDebugMessages) System.out.println("-- " + expected + " --");
+            if (printDebugMessages) log(expected.toString());
+            return advance();
         } else error("Expected " + expected + " but found " + currentLexeme + ".");
+        return null;
     }
 
-    private void advance() {
+    private Lexeme advance() {
         currentLexeme = lexemes.get(nextLexemeIndex);
         nextLexemeIndex++;
+        return currentLexeme;
     }
 
     // Consumption functions
-    public void program() {
-        if (printDebugMessages) System.out.println("-- program --");
-        if (statementListPending()) statementList();
+    public Lexeme program() {
+        if (printDebugMessages) log("program");
+        Lexeme program = new Lexeme(PROGRAM, currentLexeme.getLineNumber());
+        if (statementListPending()) program.setLeft(statementList());
+        return program;
     }
 
-    private void statementList() {
-        if (printDebugMessages) System.out.println("-- statementList --");
-        statement();
-        while (statementPending()) statement();
+    private Lexeme statementList() {
+        if (printDebugMessages) log("statementList");
+        Lexeme statementList = new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber());
+        statementList.setLeft(statement());
+        if (statementPending()) statementList.setRight(statementList());
+        return statementList;
     }
 
-    private void statement() {
-        if (printDebugMessages) System.out.println("-- statement --");
+    private Lexeme statement() {
+        Lexeme statement = null;
+        if (printDebugMessages) log("statement");
         if (variableDeclarationPending()) {
-            variableDeclaration();
+            statement = variableDeclaration();
             consume(BANGBANG);
         } else if (assignmentPending()) {
-            assignment();
+            statement = assignment();
             consume(BANGBANG);
-        } else if (functionDefinitionPending()) functionDefinition();
-        else if (loopPending()) loop();
-        else if (ifStatementPending()) ifStatement();
-        else if (commentPending()) comment();
+        } else if (functionDefinitionPending()) statement = functionDefinition();
+        else if (loopPending()) statement = loop();
+        else if (ifStatementPending()) statement = ifStatement();
+        else if (commentPending()) statement = comment();
         else if (expressionPending()) {
-            expression();
+            statement = expression();
             consume(BANGBANG);
         } else error("Expected statement.");
+        return statement;
     }
 
-    private void variableDeclaration() {
-        if (printDebugMessages) System.out.println("-- variableDeclaration --");
+    private Lexeme variableDeclaration() {
+        if (printDebugMessages) log("variableDeclaration");
         consume(VAR_KEYWORD);
-        consume(IDENTIFIER);
-        if (regularAssignmentPending()) regularAssignment();
+        Lexeme declaration = new Lexeme(VARIABLE_DECLARATION, currentLexeme.getLineNumber());
+        declaration.setLeft(consume(IDENTIFIER));
+        if (check(ASSIGN_OPERATOR)) {
+            consume(ASSIGN_OPERATOR);
+            declaration.setRight(expression());
+        }
+        return declaration;
     }
 
-    private void assignment() {
-        if (printDebugMessages) System.out.println("-- assignment --");
+    private Lexeme assignment() {
+        if (printDebugMessages) log("assignment");
+        Lexeme assignment = new Lexeme(ASSIGNMENT, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         if (unaryOperatorPending()) {
-            unaryOperator();
-            consume(IDENTIFIER);
+            glue.setLeft(unaryOperator());
+            glue.setRight(consume(IDENTIFIER));
+            assignment.setRight(glue);
         } else if (check(IDENTIFIER)) {
-            consume(IDENTIFIER);
-            regularAssignment();
+            glue.setLeft(consume(IDENTIFIER));
+            glue.setRight(regularAssignment());
+            assignment.setLeft(glue);
         } else error("Expected assignment operator.");
+        return assignment;
     }
 
-    private void functionDefinition() {
-        if (printDebugMessages) System.out.println("-- functionDefinition --");
+    private Lexeme functionDefinition() {
+        if (printDebugMessages) log("functionDefinition");
+        Lexeme funcDef = new Lexeme(FUNCTION_DEFINITION, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FUNC_KEYWORD);
-        consume(IDENTIFIER);
-        consume(ASSIGNMENT);
-        functionArguments();
-        block();
+        glue.setLeft(consume(IDENTIFIER));
+        consume(ASSIGN_OPERATOR);
+        glue.setRight(functionArgs());
+        funcDef.setLeft(glue);
+        funcDef.setRight(block());
         consume(BANGBANG);
+        return funcDef;
     }
 
-    private void loop() {
-        if (printDebugMessages) System.out.println("-- loop --");
-        if (forLoopPending()) forLoop();
-        else if (foreachLoopPending()) foreachLoop();
-        else if (whenLoopPending()) whenLoop();
-        else if (loopLoopPending()) loopLoop();
+    private Lexeme loop() {
+        if (printDebugMessages) log("loop");
+        if (forLoopPending()) return forLoop();
+        else if (foreachLoopPending()) return foreachLoop();
+        else if (whenLoopPending()) return whenLoop();
+        else if (loopLoopPending()) return loopLoop();
         else error("Expected loop.");
+        return null;
     }
 
-    private void ifStatement() {
-        if (printDebugMessages) System.out.println("-- ifStatement --");
+    private Lexeme ifStatement() {
+        if (printDebugMessages) log("ifStatement");
+        Lexeme ifStatement = new Lexeme(IF_STATEMENT, currentLexeme.getLineNumber());
+        Lexeme glue1 = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(IF_KEYWORD);
-        parenthesizedExpression();
-        block();
-        while (butifStatementPending()) {
-            butifStatement();
+        glue1.setLeft(parenthesizedExpression());
+        glue2.setRight(block());
+        if (butifStatementPending()) {
+            glue2.setLeft(butifStatementList());
         }
-        if (butStatementPending()) butStatement();
+        if (butStatementPending()) glue2.setRight(butStatement());
+        ifStatement.setLeft(glue1);
+        ifStatement.setRight(glue2);
+        return ifStatement;
     }
 
-    private void comment() {
-        if (printDebugMessages) System.out.println("-- comment --");
-        consume(COMMENT);
+    private Lexeme comment() {
+        if (printDebugMessages) log("comment");
+        return consume(COMMENT);
     }
 
-    private void expression() {
-        if (printDebugMessages) System.out.println("-- expression --");
-        if (binaryExpressionPending()) binaryExpression();
-        else if (primaryPending()) primary();
+    private Lexeme expression() {
+        if (printDebugMessages) log("expression");
+        if (binaryExpressionPending()) return binaryExpression();
+        else if (primaryPending()) return primary();
         else error("Expression expected.");
+        return null;
     }
 
-    private void type() {
-        if (printDebugMessages) System.out.println("-- type --");
-        if (check(STR_KEYWORD)) consume(STR_KEYWORD);
-        else if (check(NUM_KEYWORD)) consume(NUM_KEYWORD);
-        else if (check(TF_KEYWORD)) consume(TF_KEYWORD);
-        else if (check(ARR_KEYWORD)) consume(ARR_KEYWORD);
+    private Lexeme type() {
+        if (printDebugMessages) log("type");
+        if (check(STR_KEYWORD)) return consume(STR_KEYWORD);
+        else if (check(NUM_KEYWORD)) return consume(NUM_KEYWORD);
+        else if (check(TF_KEYWORD)) return consume(TF_KEYWORD);
+        else if (check(ARR_KEYWORD)) return consume(ARR_KEYWORD);
         else error("Expected type keyword.");
+        return null;
     }
 
-    private void regularAssignment() {
-        if (printDebugMessages) System.out.println("-- regularAssignment --");
-        if (check(ASSIGNMENT)) consume(ASSIGNMENT);
-        else if (operatorAssignmentPending()) operatorAssignment();
+    private Lexeme regularAssignment() {
+        if (printDebugMessages) log("regularAssignment");
+        Lexeme regularAssignment = new Lexeme(REGULAR_ASSIGNMENT, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        if (check(ASSIGN_OPERATOR)) glue.setLeft(consume(ASSIGN_OPERATOR));
+        else if (operatorAssignmentPending()) glue.setRight(operatorAssignment());
         else error("Expected assignment operator.");
-        expression();
+        regularAssignment.setLeft(glue);
+        regularAssignment.setRight(expression());
+        return regularAssignment;
     }
 
-    private void unaryOperator() {
-        if (printDebugMessages) System.out.println("-- unaryOperator --");
-        if (check(INCREMENT)) consume(INCREMENT);
-        else if (check(DECREMENT)) consume(DECREMENT);
-        else if (check(NOT_KEYWORD)) consume(NOT_KEYWORD);
-        else if (check(EXCLAMATION)) consume(EXCLAMATION);
+    private Lexeme unaryOperator() {
+        if (printDebugMessages) log("unaryOperator");
+        if (check(INCREMENT)) return consume(INCREMENT);
+        else if (check(DECREMENT)) return consume(DECREMENT);
+        else if (check(NOT_KEYWORD)) return consume(NOT_KEYWORD);
+        else if (check(EXCLAMATION)) return consume(EXCLAMATION);
         else error("Expected unary assignment operator.");
+        return null;
     }
 
-    private void functionArguments() {
-        if (printDebugMessages) System.out.println("-- functionArguments --");
-        while (functionArgumentPending()) functionArgument();
-        if (check(OPEN_SQUARE)) {
-            consume(OPEN_SQUARE);
-            functionArgument();
-            while (functionArgumentPending()) functionArgument();
-            consume(CLOSED_SQUARE);
+    private Lexeme functionArgs() {
+        if (printDebugMessages) log("functionArgs");
+        Lexeme functionArgs = new Lexeme(FUNCTION_ARGS, currentLexeme.getLineNumber());
+        if (functionArgPending()) {
+            functionArgs.setLeft(functionArg());
         }
+        if (functionArgPending()) {
+            functionArgs.setRight(functionArgs());
+        }
+        return functionArgs;
     }
 
-    private void block() {
-        if (printDebugMessages) System.out.println("-- block --");
+    private Lexeme block() {
+        if (printDebugMessages) log("block");
         consume(DOUBLE_FORWARD);
-        while (statementListPending()) {
-            statementList();
+        if (statementListPending()) {
+            return statementList();
         }
         consume(DOUBLE_BACKWARD);
+        return null;
     }
 
-    private void forLoop() {
-        if (printDebugMessages) System.out.println("-- forLoop --");
+    private Lexeme forLoop() {
+        if (printDebugMessages) log("forLoop");
+        Lexeme forLoop = new Lexeme(FOR_LOOP, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FOR_KEYWORD);
         consume(OPEN_CURLY);
-        variableDeclaration();
+        glue2.setLeft(variableDeclaration());
         consume(BANGBANG);
-        expression();
+        glue2.setRight(expression());
         consume(BANGBANG);
-        assignment();
+        glue.setRight(assignment());
         consume(CLOSED_CURLY);
-        block();
+        forLoop.setRight(block());
+        glue.setLeft(glue2);
+        forLoop.setLeft(glue);
+        return forLoop;
     }
 
-    private void foreachLoop() {
-        if (printDebugMessages) System.out.println("-- foreachLoop --");
+    private Lexeme foreachLoop() {
+        if (printDebugMessages) log("foreachLoop");
+        Lexeme foreachLoop = new Lexeme(FOREACH_LOOP, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FOREACH_KEYWORD);
         consume(OPEN_CURLY);
         consume(VAR_KEYWORD);
-        consume(IDENTIFIER);
+        glue.setLeft(consume(IDENTIFIER));
         consume(OF_KEYWORD);
-        consume(IDENTIFIER);
+        glue.setRight(consume(IDENTIFIER));
         consume(CLOSED_CURLY);
-        block();
+        foreachLoop.setLeft(glue);
+        foreachLoop.setRight(block());
+        return foreachLoop;
     }
 
-    private void whenLoop() {
-        if (printDebugMessages) System.out.println("-- whenLoop --");
+    private Lexeme whenLoop() {
+        if (printDebugMessages) log("whenLoop");
+        Lexeme whenLoop = new Lexeme(WHEN_LOOP, currentLexeme.getLineNumber());
         consume(WHEN_KEYWORD);
-        parenthesizedExpression();
-        block();
+        whenLoop.setLeft(parenthesizedExpression());
+        whenLoop.setRight(block());
+        return whenLoop;
     }
 
-    private void loopLoop() {
-        if (printDebugMessages) System.out.println("-- loopLoop --");
+    private Lexeme loopLoop() {
+        if (printDebugMessages) log("loopLoop");
+        Lexeme loopLoop = new Lexeme(LOOP_LOOP, currentLexeme.getLineNumber());
         consume(LOOP_KEYWORD);
         consume(OPEN_CURLY);
-        consume(NUMBER);
+        loopLoop.setLeft(consume(NUMBER));
         consume(CLOSED_CURLY);
-        block();
+        loopLoop.setRight(block());
+        return loopLoop;
     }
 
-    private void butifStatement() {
-        if (printDebugMessages) System.out.println("-- butifStatement --");
+    private Lexeme butifStatementList() {
+        if (printDebugMessages) log("butifStatementList");
+        Lexeme butifStatementList = new Lexeme(BUTIF_STATEMENT_LIST, currentLexeme.getLineNumber());
+        if (butifStatementPending()) {
+            butifStatementList.setRight(butifStatement());
+        }
+        if (butifStatementPending()) {
+            butifStatementList.setLeft(butifStatementList());
+        }
+        return butifStatementList;
+    }
+
+    private Lexeme butifStatement() {
+        if (printDebugMessages) log("butifStatement");
+        Lexeme butIfStatement = new Lexeme(BUTIF_STATEMENT, currentLexeme.getLineNumber());
         consume(BUTIF_KEYWORD);
-        parenthesizedExpression();
-        block();
+        butIfStatement.setLeft(parenthesizedExpression());
+        butIfStatement.setRight(block());
+        return butIfStatement;
     }
 
-    private void butStatement() {
-        if (printDebugMessages) System.out.println("-- butStatement --");
+    private Lexeme butStatement() {
+        if (printDebugMessages) log("butStatement");
+        Lexeme butStatement = new Lexeme(BUT_STATEMENT, currentLexeme.getLineNumber());
         consume(BUT_KEYWORD);
-        parenthesizedExpression();
-        block();
+        butStatement.setLeft(block());
+        return butStatement;
     }
 
-    private void binaryExpression() {
-        if (printDebugMessages) System.out.println("-- binaryExpression --");
-        primary();
-        binaryOperator();
-        if (binaryExpressionPending()) binaryExpression();
-        else if (primaryPending()) primary();
+    private Lexeme binaryExpression() {
+        if (printDebugMessages) log("binaryExpression");
+        Lexeme binaryExpression = new Lexeme(BINARY_EXPRESSION, currentLexeme.getLineNumber());
+        Lexeme firstOperand = primary();
+        Lexeme binaryOperator = binaryOperator();
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        if (binaryExpressionPending()) glue.setRight(binaryExpression());
+        else if (primaryPending()) glue.setLeft(primary());
         else error("Expected primary or further expression.");
+        binaryOperator.setLeft(firstOperand);
+        binaryOperator.setRight(glue);
+        binaryExpression.setLeft(binaryOperator);
+        return binaryExpression;
     }
 
-    private void primary() {
-        if (printDebugMessages) System.out.println("-- primary --");
-        if (unaryExpressionPending()) unaryExpression();
-        else if (check(NUMBER)) consume(NUMBER);
-        else if (functionCallPending()) functionCall();
-        else if (castPending()) cast();
-        else if (check(IDENTIFIER)) consume(IDENTIFIER);
-        else if (check(STRING)) consume(STRING);
-        else if (booleanPending()) bool();
-        else if (arrayPending()) array();
+    private Lexeme primary() {
+        if (printDebugMessages) log("primary");
+        if (unaryExpressionPending()) return unaryExpression();
+        else if (check(NUMBER)) return consume(NUMBER);
+        else if (functionCallPending()) return functionCall();
+        else if (castPending()) return cast();
+        else if (check(IDENTIFIER)) return consume(IDENTIFIER);
+        else if (check(STRING)) return consume(STRING);
+        else if (booleanPending()) return bool();
+        else if (arrayPending()) return array();
         else error("Expected primary.");
+        return null;
     }
 
-    private void unaryExpression() {
-        if (printDebugMessages) System.out.println("-- unaryExpression --");
+    private Lexeme unaryExpression() {
+        if (printDebugMessages) log("unaryExpression");
+        Lexeme unaryExpression = new Lexeme(UNARY_EXPRESSION, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         if (unaryOperatorPending()) {
-            unaryOperator();
-            primary();
-        } else if (minusExpressionPending()) minusExpression();
-        else if (parenthesizedExpressionPending()) parenthesizedExpression();
-        else error("Expected unary expression.");
+            glue.setLeft(unaryOperator());
+            glue.setRight(primary());
+            unaryExpression.setLeft(glue);
+        } else if (minusExpressionPending()) {
+            glue.setLeft(minusExpression());
+            unaryExpression.setRight(glue);
+        } else if (parenthesizedExpressionPending()) {
+            glue.setRight(parenthesizedExpression());
+            unaryExpression.setRight(glue);
+        } else error("Expected unary expression.");
+        return unaryExpression;
     }
 
-    private void operatorAssignment() {
-        if (printDebugMessages) System.out.println("-- operatorAssignment --");
-        if (check(PLUS_ASSIGNMENT)) consume(PLUS_ASSIGNMENT);
-        else if (check(MINUS_ASSIGNMENT)) consume(MINUS_ASSIGNMENT);
-        else if (check(DIVIDE_ASSIGNMENT)) consume(DIVIDE_ASSIGNMENT);
-        else if (check(TIMES_ASSIGNMENT)) consume(TIMES_ASSIGNMENT);
-        else if (check(DOUBLE_DIVIDE_ASSIGNMENT)) consume(DOUBLE_DIVIDE_ASSIGNMENT);
-        else if (check(CARET_ASSIGNMENT)) consume(CARET_ASSIGNMENT);
-        else if (check(PERCENT_ASSIGNMENT)) consume(PERCENT_ASSIGNMENT);
+    private Lexeme operatorAssignment() {
+        if (printDebugMessages) log("operatorAssignment");
+        if (check(PLUS_ASSIGNMENT)) return consume(PLUS_ASSIGNMENT);
+        else if (check(MINUS_ASSIGNMENT)) return consume(MINUS_ASSIGNMENT);
+        else if (check(DIVIDE_ASSIGNMENT)) return consume(DIVIDE_ASSIGNMENT);
+        else if (check(TIMES_ASSIGNMENT)) return consume(TIMES_ASSIGNMENT);
+        else if (check(DOUBLE_DIVIDE_ASSIGNMENT)) return consume(DOUBLE_DIVIDE_ASSIGNMENT);
+        else if (check(CARET_ASSIGNMENT)) return consume(CARET_ASSIGNMENT);
+        else if (check(PERCENT_ASSIGNMENT)) return consume(PERCENT_ASSIGNMENT);
         else error("Expected assignment operator.");
+        return null;
     }
 
-    private void functionArgument() {
-        if (printDebugMessages) System.out.println("-- functionArgument --");
+    private Lexeme functionArg() {
+        if (printDebugMessages) log("functionArg");
         consume(VAR_KEYWORD);
-        consume(IDENTIFIER);
+        return consume(IDENTIFIER);
     }
 
-    private void binaryOperator() {
-        if (printDebugMessages) System.out.println("-- binaryOperator --");
-        if (binaryArithmeticOperatorPending()) binaryArithmeticOperator();
-        else if (binaryComparatorPending()) binaryComparator();
-        else if (binaryBooleanOperatorPending()) binaryBooleanOperator();
+    private Lexeme binaryOperator() {
+        if (printDebugMessages) log("binaryOperator");
+        if (binaryArithmeticOperatorPending()) return binaryArithmeticOperator();
+        else if (binaryComparatorPending()) return binaryComparator();
+        else if (binaryBooleanOperatorPending()) return binaryBooleanOperator();
         else error("Expected binary operator.");
+        return null;
     }
 
-    private void bool() {
-        if (printDebugMessages) System.out.println("-- boolean --");
-        if (check(TRUE_KEYWORD)) consume(TRUE_KEYWORD);
-        else if (check(FALS_KEYWORD)) consume(FALS_KEYWORD);
+    private Lexeme bool() {
+        if (printDebugMessages) log("boolean");
+        if (check(TRUE_KEYWORD)) return consume(TRUE_KEYWORD);
+        else if (check(FALS_KEYWORD)) return consume(FALS_KEYWORD);
         else error("Expected boolean.");
+        return null;
     }
 
-    private void array() {
-        if (printDebugMessages) System.out.println("-- array --");
+    private Lexeme array() {
+        if (printDebugMessages) log("array");
         consume(OPEN_PAREN);
-        arrayElements();
+        Lexeme arrayElements = arrayElements();
         consume(CLOSED_PAREN);
+        return arrayElements;
     }
 
-    private void cast() {
-        if (printDebugMessages) System.out.println("-- cast --");
-        consume(IDENTIFIER);
+    private Lexeme cast() {
+        if (printDebugMessages) log("cast");
+        Lexeme cast = new Lexeme(CAST, currentLexeme.getLineNumber());
+        cast.setLeft(consume(IDENTIFIER));
         consume(PERIOD);
-        type();
+        cast.setRight(type());
+        return cast;
     }
 
-    private void functionCall() {
-        if (printDebugMessages) System.out.println("-- functionCall --");
-        consume(IDENTIFIER);
+    private Lexeme functionCall() {
+        if (printDebugMessages) log("functionCall");
+        Lexeme functionCall = new Lexeme(FUNCTION_CALL, currentLexeme.getLineNumber());
+        functionCall.setLeft(consume(IDENTIFIER));
         consume(OPEN_CURLY);
-        callArguments();
+        functionCall.setRight(callArguments());
         consume(CLOSED_CURLY);
+        return functionCall;
     }
 
-    private void parenthesizedExpression() {
-        if (printDebugMessages) System.out.println("-- parenthesizedExpression --");
+    private Lexeme parenthesizedExpression() {
+        if (printDebugMessages) log("parenthesizedExpression");
         consume(OPEN_CURLY);
-        expression();
+        Lexeme expression = expression();
         consume(CLOSED_CURLY);
+        return expression;
     }
 
-    private void binaryArithmeticOperator() {
-        if (printDebugMessages) System.out.println("-- binaryArithmeticOperator --");
-        if (check(PLUS)) consume(PLUS);
-        else if (check(MINUS)) consume(MINUS);
-        else if (check(DIVIDE)) consume(DIVIDE);
-        else if (check(TIMES)) consume(TIMES);
-        else if (check(DOUBLE_DIVIDE)) consume(DOUBLE_DIVIDE);
-        else if (check(CARET)) consume(CARET);
-        else if (check(PERCENT)) consume(PERCENT);
+    private Lexeme binaryArithmeticOperator() {
+        if (printDebugMessages) log("binaryArithmeticOperator");
+        if (check(PLUS)) return consume(PLUS);
+        else if (check(MINUS)) return consume(MINUS);
+        else if (check(DIVIDE)) return consume(DIVIDE);
+        else if (check(TIMES)) return consume(TIMES);
+        else if (check(DOUBLE_DIVIDE)) return consume(DOUBLE_DIVIDE);
+        else if (check(CARET)) return consume(CARET);
+        else if (check(PERCENT)) return consume(PERCENT);
         else error("Expected binary arithmetic operator.");
+        return null;
     }
 
-    private void binaryComparator() {
-        if (printDebugMessages) System.out.println("-- binaryComparator --");
-        if (check(GREATER)) consume(GREATER);
-        else if (check(LESS)) consume(LESS);
-        else if (check(GREATER_QUESTION)) consume(GREATER_QUESTION);
-        else if (check(LESS_QUESTION)) consume(LESS_QUESTION);
-        else if (check(GEQ)) consume(GEQ);
-        else if (check(LEQ)) consume(LEQ);
-        else if (check(QUESTION)) consume(QUESTION);
-        else if (check(NOT_QUESTION)) consume(NOT_QUESTION);
-        else if (check(DOUBLE_QUESTION)) consume(DOUBLE_QUESTION);
-        else if (check(NOT_DOUBLE_QUESTION)) consume(NOT_DOUBLE_QUESTION);
-        else if (check(APPROX)) consume(APPROX);
-        else if (check(NOT_APPROX)) consume(NOT_APPROX);
+    private Lexeme binaryComparator() {
+        if (printDebugMessages) log("binaryComparator");
+        if (check(GREATER)) return consume(GREATER);
+        else if (check(LESS)) return consume(LESS);
+        else if (check(GREATER_QUESTION)) return consume(GREATER_QUESTION);
+        else if (check(LESS_QUESTION)) return consume(LESS_QUESTION);
+        else if (check(GEQ)) return consume(GEQ);
+        else if (check(LEQ)) return consume(LEQ);
+        else if (check(QUESTION)) return consume(QUESTION);
+        else if (check(NOT_QUESTION)) return consume(NOT_QUESTION);
+        else if (check(DOUBLE_QUESTION)) return consume(DOUBLE_QUESTION);
+        else if (check(NOT_DOUBLE_QUESTION)) return consume(NOT_DOUBLE_QUESTION);
+        else if (check(APPROX)) return consume(APPROX);
+        else if (check(NOT_APPROX)) return consume(NOT_APPROX);
         else error("Expected binary comparator.");
+        return null;
     }
 
-    private void binaryBooleanOperator() {
-        if (printDebugMessages) System.out.println("-- binaryBooleanOperator --");
-        if (check(AND_KEYWORD)) consume(AND_KEYWORD);
-        else if (check(OR_KEYWORD)) consume(OR_KEYWORD);
-        else if (check(NAND_KEYWORD)) consume(NAND_KEYWORD);
-        else if (check(NOR_KEYWORD)) consume(NOR_KEYWORD);
-        else if (check(XOR_KEYWORD)) consume(XOR_KEYWORD);
-        else if (check(XNOR_KEYWORD)) consume(XNOR_KEYWORD);
-        else if (check(IMPLIES_KEYWORD)) consume(IMPLIES_KEYWORD);
+    private Lexeme binaryBooleanOperator() {
+        if (printDebugMessages) log("binaryBooleanOperator");
+        if (check(AND_KEYWORD)) return consume(AND_KEYWORD);
+        else if (check(OR_KEYWORD)) return consume(OR_KEYWORD);
+        else if (check(NAND_KEYWORD)) return consume(NAND_KEYWORD);
+        else if (check(NOR_KEYWORD)) return consume(NOR_KEYWORD);
+        else if (check(XOR_KEYWORD)) return consume(XOR_KEYWORD);
+        else if (check(XNOR_KEYWORD)) return consume(XNOR_KEYWORD);
+        else if (check(IMPLIES_KEYWORD)) return consume(IMPLIES_KEYWORD);
         else error("Expected boolean operator.");
+        return null;
     }
 
-    private void arrayElements() {
-        if (printDebugMessages) System.out.println("-- arrayElements --");
-        while (primaryPending()) primary();
+    private Lexeme arrayElements() {
+        if (printDebugMessages) log("arrayElements");
+        Lexeme arrayElements = new Lexeme(ARRAY_ELEMENTS, currentLexeme.getLineNumber());
+        if (primaryPending()) {
+            arrayElements.setLeft(primary());
+        }
+        if (primaryPending()) {
+            arrayElements.setRight(arrayElements());
+        }
+        return arrayElements;
     }
 
-    private void callArguments() {
-        if (printDebugMessages) System.out.println("-- callArguments --");
-        while (primaryPending()) primary();
+    private Lexeme callArguments() {
+        if (printDebugMessages) log("callArguments");
+        Lexeme callArguments = new Lexeme(CALL_ARGUMENTS, currentLexeme.getLineNumber());
+        if (primaryPending()) {
+            callArguments.setLeft(primary());
+        }
+        if (primaryPending()) {
+            callArguments.setRight(callArguments());
+        }
+        return callArguments;
     }
 
-    private void minusExpression() {
-        if (printDebugMessages) System.out.println("-- minusExpression --");
-        consume(MINUS);
-        expression();
+    private Lexeme minusExpression() {
+        if (printDebugMessages) log("minusExpression");
+        Lexeme minusExpression = new Lexeme(MINUS_EXPRESSION, currentLexeme.getLineNumber());
+        minusExpression.setLeft(consume(MINUS));
+        minusExpression.setRight(expression());
+        return minusExpression;
     }
 
     // Pending functions
@@ -449,12 +558,8 @@ public class Recognizer {
         return check(INCREMENT) || check(DECREMENT) || check(NOT_KEYWORD) || check(EXCLAMATION);
     }
 
-    private boolean regularAssignmentPending() {
-        return check(ASSIGNMENT) || operatorAssignmentPending();
-    }
-
     private boolean regularAssignmentPendingNext() {
-        return checkNext(ASSIGNMENT) || operatorAssignmentPendingNext();
+        return checkNext(ASSIGN_OPERATOR) || operatorAssignmentPendingNext();
     }
 
     private boolean forLoopPending() {
@@ -597,7 +702,7 @@ public class Recognizer {
         return check(IDENTIFIER) && checkNext(OPEN_CURLY);
     }
 
-    private boolean functionArgumentPending() {
+    private boolean functionArgPending() {
         return typePending() && checkNext(IDENTIFIER);
     }
 

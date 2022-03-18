@@ -32,8 +32,9 @@ public class Sigma {
         String sourceCode = getSourceCodeFromFile(path);
         Lexer lexer = new Lexer(sourceCode);
         Recognizer recognizer = new Recognizer(lexer.lex());
-        lexer.printLexemes();
-        recognizer.program();
+        //lexer.printLexemes();
+        Lexeme programParseTree = recognizer.program();
+        System.out.println(programParseTree);
         printErrors();
     }
 

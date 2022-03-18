@@ -13,11 +13,11 @@ statement ::= ( variableDeclaration "‼️" )
             | comment
             | ( expression "‼️" )
 
-variableDeclaration ::= "var" IDENTIFIER [regularAssignment]
+variableDeclaration ::= "var" IDENTIFIER ["<-" expression]
 
 assignment ::= IDENTIFIER regularAssignment | unaryOperator IDENTIFIER
 
-functionDefinition ::= "func" IDENTIFIER "<-" functionArguments block "‼️"
+functionDefinition ::= "func" IDENTIFIER "<-" functionArgs block "‼️"
 functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
 callArguments ::= primary*
 
@@ -28,9 +28,10 @@ foreachLoop ::= "foreach" "{" "var" IDENTIFIER "of" IDENTIFIER "}" block
 whenLoop ::= "when" "{" expression "}" block
 loopLoop ::= "loop" "{" NUMBER "}" block
 
-ifStatement ::= "if" "{" expression "}" block butifStatement* [butStatement]
+ifStatement ::= "if" "{" expression "}" block butifStatementList [butStatement]
+butifStatementList ::= butifStatement*
 butifStatement ::= "butif" "{" expression "}" block
-butStatement ::= "but" "{" expression "}" block
+butStatement ::= "but" block
 
 comment ::= singleLineComment | multiLineComment
 singleLineComment ::= "\\" COMMENTTEXT
@@ -43,8 +44,8 @@ unaryOperator ::= "++" | "--" | "not" | "!"
 regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
 
-functionArguments ::= functionArgument* ["[" functionArgument+ "]"]
-functionArgument ::= "var" IDENTIFIER
+functionArgs ::= functionArg* ["[" functionArg+ "]"]
+functionArg ::= "var" IDENTIFIER
 
 block ::= "»" [statementList] "«"
 

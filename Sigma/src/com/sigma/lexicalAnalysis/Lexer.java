@@ -130,10 +130,6 @@ public class Lexer {
                 return new Lexeme(DOUBLE_FORWARD, lineNumber);
             case '«':
                 return new Lexeme(DOUBLE_BACKWARD, lineNumber);
-            case '[':
-                return new Lexeme(OPEN_SQUARE, lineNumber);
-            case ']':
-                return new Lexeme(CLOSED_SQUARE, lineNumber);
             case '(':
                 return new Lexeme(OPEN_PAREN, lineNumber);
             case ')':
@@ -191,7 +187,7 @@ public class Lexer {
                 if (match('?')) return new Lexeme(GREATER_QUESTION, lineNumber);
                 return new Lexeme(GREATER, lineNumber);
             case '<':
-                if (match('-')) return new Lexeme(ASSIGNMENT, lineNumber);
+                if (match('-')) return new Lexeme(ASSIGN_OPERATOR, lineNumber);
                 if (match('?')) return new Lexeme(LESS_QUESTION, lineNumber);
                 return new Lexeme(LESS, lineNumber);
             case '\\':

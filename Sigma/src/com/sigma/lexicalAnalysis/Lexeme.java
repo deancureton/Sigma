@@ -9,6 +9,8 @@ public class Lexeme {
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
 
+    private Lexeme left, right;
+
     // Constructors
     public Lexeme(TokenType type, int lineNumber) {
         this.type = type;
@@ -54,6 +56,14 @@ public class Lexeme {
         return this.boolVal;
     }
 
+    public void setLeft(Lexeme left) {
+        this.left = left;
+    }
+
+    public void setRight(Lexeme right) {
+        this.right = right;
+    }
+
     // toString
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
@@ -70,4 +80,5 @@ public class Lexeme {
         }
         return output;
     }
+
 }

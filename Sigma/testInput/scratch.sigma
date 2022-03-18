@@ -1,3 +1,40 @@
+var x <- 3‼
+x <- "str"‼
+++x‼
+func x <- var num1 var num2 [var num3] »
+«‼
+x { 1 2 3 }‼
+
+for { var x <- 3‼ x < 5‼ ++x } »
+    \code
+    !3‼
+    -3‼
+    {3+4}‼
+«
+
+foreach { var x of y } »
+    a +<- 3‼
+«
 when { {not a.num} ? 0 } »
     \code
 «
+loop { 3 } »
+    \. code .\
+«
+
+if {5 + 5} »
+« butif {3} »
+« butif {-3} »
+« butif {!3} »
+« butif {{{{3}}}} »
+« butif {++lol} »
+« but »
+«
+
+\. comment
+.\
+3+4+5+6‼
+3‼
+++3‼
+
+(1, "yeah", true, 4)‼
