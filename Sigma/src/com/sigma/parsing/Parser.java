@@ -1,4 +1,4 @@
-package com.sigma.recognizing;
+package com.sigma.parsing;
 
 import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.Lexeme;
@@ -8,14 +8,18 @@ import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-public class Recognizer {
-    private static final boolean printDebugMessages = false;
+
+// TODO something like {not a.num} ? 0 or  does not work, doesn't recognize it as a binary expression
+// TODO fix that weird binary expression yellow thing
+
+public class Parser {
+    private static final boolean printDebugMessages = true;
     private final ArrayList<Lexeme> lexemes;
     private Lexeme currentLexeme;
     private int nextLexemeIndex;
 
     // Constructor
-    public Recognizer(ArrayList<Lexeme> lexemes) {
+    public Parser(ArrayList<Lexeme> lexemes) {
         this.lexemes = lexemes;
         this.nextLexemeIndex = 0;
         advance();
@@ -32,17 +36,18 @@ public class Recognizer {
     }
 
     private Lexeme consume(TokenType expected) {
+        Lexeme returnLexeme = null;
         if (check(expected)) {
             if (printDebugMessages) log(expected.toString());
-            return advance();
+            returnLexeme = currentLexeme;
+            advance();
         } else error("Expected " + expected + " but found " + currentLexeme + ".");
-        return null;
+        return returnLexeme;
     }
 
-    private Lexeme advance() {
+    private void advance() {
         currentLexeme = lexemes.get(nextLexemeIndex);
         nextLexemeIndex++;
-        return currentLexeme;
     }
 
     // Consumption functions
@@ -176,11 +181,9 @@ public class Recognizer {
     private Lexeme regularAssignment() {
         if (printDebugMessages) log("regularAssignment");
         Lexeme regularAssignment = new Lexeme(REGULAR_ASSIGNMENT, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
-        if (check(ASSIGN_OPERATOR)) glue.setLeft(consume(ASSIGN_OPERATOR));
-        else if (operatorAssignmentPending()) glue.setRight(operatorAssignment());
+        if (check(ASSIGN_OPERATOR)) regularAssignment.setLeft(consume(ASSIGN_OPERATOR));
+        else if (operatorAssignmentPending()) regularAssignment.setLeft(operatorAssignment());
         else error("Expected assignment operator.");
-        regularAssignment.setLeft(glue);
         regularAssignment.setRight(expression());
         return regularAssignment;
     }
@@ -191,6 +194,7 @@ public class Recognizer {
         else if (check(DECREMENT)) return consume(DECREMENT);
         else if (check(NOT_KEYWORD)) return consume(NOT_KEYWORD);
         else if (check(EXCLAMATION)) return consume(EXCLAMATION);
+        else if (check(MINUS)) return consume(MINUS);
         else error("Expected unary assignment operator.");
         return null;
     }
@@ -209,12 +213,13 @@ public class Recognizer {
 
     private Lexeme block() {
         if (printDebugMessages) log("block");
+        Lexeme block = null;
         consume(DOUBLE_FORWARD);
-        if (statementListPending()) {
-            return statementList();
+        if (statementPending()) {
+            block = statementList();
         }
         consume(DOUBLE_BACKWARD);
-        return null;
+        return block;
     }
 
     private Lexeme forLoop() {
@@ -256,7 +261,9 @@ public class Recognizer {
         if (printDebugMessages) log("whenLoop");
         Lexeme whenLoop = new Lexeme(WHEN_LOOP, currentLexeme.getLineNumber());
         consume(WHEN_KEYWORD);
-        whenLoop.setLeft(parenthesizedExpression());
+        consume(OPEN_CURLY);
+        whenLoop.setLeft(expression());
+        consume(CLOSED_CURLY);
         whenLoop.setRight(block());
         return whenLoop;
     }
@@ -276,10 +283,10 @@ public class Recognizer {
         if (printDebugMessages) log("butifStatementList");
         Lexeme butifStatementList = new Lexeme(BUTIF_STATEMENT_LIST, currentLexeme.getLineNumber());
         if (butifStatementPending()) {
-            butifStatementList.setRight(butifStatement());
+            butifStatementList.setLeft(butifStatement());
         }
         if (butifStatementPending()) {
-            butifStatementList.setLeft(butifStatementList());
+            butifStatementList.setRight(butifStatementList());
         }
         return butifStatementList;
     }
@@ -306,12 +313,10 @@ public class Recognizer {
         Lexeme binaryExpression = new Lexeme(BINARY_EXPRESSION, currentLexeme.getLineNumber());
         Lexeme firstOperand = primary();
         Lexeme binaryOperator = binaryOperator();
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
-        if (binaryExpressionPending()) glue.setRight(binaryExpression());
-        else if (primaryPending()) glue.setLeft(primary());
+        if (binaryExpressionPending()) binaryOperator.setRight(binaryExpression());
+        else if (primaryPending()) binaryOperator.setRight(primary());
         else error("Expected primary or further expression.");
         binaryOperator.setLeft(firstOperand);
-        binaryOperator.setRight(glue);
         binaryExpression.setLeft(binaryOperator);
         return binaryExpression;
     }
@@ -338,11 +343,8 @@ public class Recognizer {
             glue.setLeft(unaryOperator());
             glue.setRight(primary());
             unaryExpression.setLeft(glue);
-        } else if (minusExpressionPending()) {
-            glue.setLeft(minusExpression());
-            unaryExpression.setRight(glue);
         } else if (parenthesizedExpressionPending()) {
-            glue.setRight(parenthesizedExpression());
+            glue.setLeft(parenthesizedExpression());
             unaryExpression.setRight(glue);
         } else error("Expected unary expression.");
         return unaryExpression;
@@ -414,9 +416,9 @@ public class Recognizer {
     private Lexeme parenthesizedExpression() {
         if (printDebugMessages) log("parenthesizedExpression");
         consume(OPEN_CURLY);
-        Lexeme expression = expression();
+        Lexeme expr = expression();
         consume(CLOSED_CURLY);
-        return expression;
+        return expr;
     }
 
     private Lexeme binaryArithmeticOperator() {
@@ -487,14 +489,6 @@ public class Recognizer {
         return callArguments;
     }
 
-    private Lexeme minusExpression() {
-        if (printDebugMessages) log("minusExpression");
-        Lexeme minusExpression = new Lexeme(MINUS_EXPRESSION, currentLexeme.getLineNumber());
-        minusExpression.setLeft(consume(MINUS));
-        minusExpression.setRight(expression());
-        return minusExpression;
-    }
-
     // Pending functions
     private boolean statementListPending() {
         return statementPending();
@@ -555,7 +549,7 @@ public class Recognizer {
     }
 
     private boolean unaryOperatorPending() {
-        return check(INCREMENT) || check(DECREMENT) || check(NOT_KEYWORD) || check(EXCLAMATION);
+        return check(INCREMENT) || check(DECREMENT) || check(NOT_KEYWORD) || check(EXCLAMATION) || check(MINUS);
     }
 
     private boolean regularAssignmentPendingNext() {
@@ -587,7 +581,7 @@ public class Recognizer {
     }
 
     private boolean unaryExpressionPending() {
-        return unaryOperatorPending() || minusExpressionPending() || parenthesizedExpressionPending();
+        return unaryOperatorPending() || parenthesizedExpressionPending();
     }
 
     private boolean operatorAssignmentPending() {
@@ -642,7 +636,6 @@ public class Recognizer {
     private boolean binaryBooleanOperatorPending() {
         return check(AND_KEYWORD)
                 || check(OR_KEYWORD)
-                || check(NOT_KEYWORD)
                 || check(NAND_KEYWORD)
                 || check(NOR_KEYWORD)
                 || check(XOR_KEYWORD)
@@ -678,7 +671,6 @@ public class Recognizer {
     private boolean binaryBooleanOperatorPendingNext() {
         return checkNext(AND_KEYWORD)
                 || checkNext(OR_KEYWORD)
-                || checkNext(NOT_KEYWORD)
                 || checkNext(NAND_KEYWORD)
                 || checkNext(NOR_KEYWORD)
                 || checkNext(XOR_KEYWORD)
@@ -704,10 +696,6 @@ public class Recognizer {
 
     private boolean functionArgPending() {
         return typePending() && checkNext(IDENTIFIER);
-    }
-
-    private boolean minusExpressionPending() {
-        return check(MINUS);
     }
 
     private boolean parenthesizedExpressionPending() {

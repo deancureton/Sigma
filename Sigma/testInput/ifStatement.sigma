@@ -1,0 +1,8 @@
+if {5 + 5} »
+« butif {3} »
+« butif {-3} »
+« butif {!3} »
+« butif {{{{3}}}} »
+« butif {++lol} »
+« but »
+«

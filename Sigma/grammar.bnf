@@ -1,7 +1,8 @@
 // https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
 
 // TODO add switch (change) statement
-// TODO fix booleans
+// TODO fix booleans (?)
+// TODO fix optional function arguments
 
 program ::= [statementList]
 statementList ::= statement+
@@ -39,7 +40,7 @@ multiLineComment ::= "\\." COMMENTTEXT ".\\"
 
 type ::= "str" | "num" | "tf" | "arr"
 
-unaryOperator ::= "++" | "--" | "not" | "!"
+unaryOperator ::= "++" | "--" | "not" | "!" | "-"
 
 regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
@@ -57,9 +58,8 @@ binaryExpression ::= primary binaryOperator primary
 
 primary ::= unaryExpression | NUMBER | IDENTIFIER | STRING | boolean | array | cast | functionCall
 
-unaryExpression ::=  minusExpression | parenthesizedExpression | (unaryOperator primary)
+unaryExpression ::=  parenthesizedExpression | (unaryOperator primary)
 parenthesizedExpression ::= "{" expression "}"
-minusExpression ::= "-" expression
 
 binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
 binaryArithmeticOperator ::= "+" | "-" | "/" | "*" | "//" | "^" | "%"

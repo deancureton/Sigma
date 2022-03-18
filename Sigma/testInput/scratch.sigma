@@ -1,7 +1,8 @@
 var x <- 3‼
 x <- "str"‼
 ++x‼
-func x <- var num1 var num2 [var num3] »
+func x <- var num1 var num2 »
+    \code
 «‼
 x { 1 2 3 }‼
 

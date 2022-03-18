@@ -2,8 +2,8 @@ package com.sigma.lexicalAnalysis;
 
 public class Lexeme {
     // Instance Variables
-    private TokenType type;
-    private Integer lineNumber;
+    private final TokenType type;
+    private final Integer lineNumber;
 
     private String stringVal;
     private Double numVal; // Sigma only supports a single real number type
@@ -64,6 +64,14 @@ public class Lexeme {
         this.right = right;
     }
 
+    public Lexeme getLeft() {
+        return left;
+    }
+
+    public Lexeme getRight() {
+        return right;
+    }
+
     // toString
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
@@ -81,4 +89,27 @@ public class Lexeme {
         return output;
     }
 
+    public void printTree(Lexeme root, int indents) {
+        System.out.print(root);
+        if (root.getLeft() != null) {
+            System.out.print('\n');
+            for (int i = 0; i < indents + 1; i++) {
+                System.out.print('\t');
+            }
+            System.out.print("left: ");
+            printTree(root.getLeft(), indents + 1);
+        }
+        if (root.getRight() != null) {
+            System.out.print('\n');
+            for (int i = 0; i < indents + 1; i++) {
+                System.out.print('\t');
+            }
+            System.out.print("right: ");
+            printTree(root.getRight(), indents + 1);
+        }
+    }
+
+    public void printTree() {
+        printTree(this, 0);
+    }
 }

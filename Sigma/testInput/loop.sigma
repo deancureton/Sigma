@@ -1,0 +1,8 @@
+for { var x <- 3‼ x < 5‼ ++x } »
+«
+foreach { var x of y } »
+«
+when { a ? 0 } »
+«
+loop { 3 } »
+«

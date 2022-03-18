@@ -2,7 +2,7 @@ package com.sigma;
 
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.Lexer;
-import com.sigma.recognizing.Recognizer;
+import com.sigma.parsing.Parser;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -31,11 +31,10 @@ public class Sigma {
         System.out.println("Running " + path + "...");
         String sourceCode = getSourceCodeFromFile(path);
         Lexer lexer = new Lexer(sourceCode);
-        Recognizer recognizer = new Recognizer(lexer.lex());
+        Parser parser = new Parser(lexer.lex());
         //lexer.printLexemes();
-        Lexeme programParseTree = recognizer.program();
-        System.out.println(programParseTree);
-        printErrors();
+        Lexeme programParseTree = parser.program();
+        programParseTree.printTree();
     }
 
     private static String getSourceCodeFromFile(String path) throws IOException {
