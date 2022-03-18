@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
 
-// TODO something like {not a.num} ? 0 or  does not work, doesn't recognize it as a binary expression
+// TODO something like {not a.num} ? 0 or a.num ? 0 does not work, doesn't recognize it as a binary expression
 // TODO fix that weird binary expression yellow thing
 
 public class Parser {
-    private static final boolean printDebugMessages = true;
+    private static final boolean printDebugMessages = false;
     private final ArrayList<Lexeme> lexemes;
     private Lexeme currentLexeme;
     private int nextLexemeIndex;
@@ -78,6 +78,7 @@ public class Parser {
         } else if (functionDefinitionPending()) statement = functionDefinition();
         else if (loopPending()) statement = loop();
         else if (ifStatementPending()) statement = ifStatement();
+        else if (changeStatementPending()) statement = changeStatement();
         else if (commentPending()) statement = comment();
         else if (expressionPending()) {
             statement = expression();
@@ -118,10 +119,17 @@ public class Parser {
         if (printDebugMessages) log("functionDefinition");
         Lexeme funcDef = new Lexeme(FUNCTION_DEFINITION, currentLexeme.getLineNumber());
         Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FUNC_KEYWORD);
         glue.setLeft(consume(IDENTIFIER));
         consume(ASSIGN_OPERATOR);
-        glue.setRight(functionArgs());
+        glue2.setLeft(functionArgs());
+        if (check(OPEN_SQUARE)) {
+            consume(OPEN_SQUARE);
+            glue2.setRight(optionalFunctionArgs());
+            consume(CLOSED_SQUARE);
+        }
+        glue.setRight(glue2);
         funcDef.setLeft(glue);
         funcDef.setRight(block());
         consume(BANGBANG);
@@ -209,6 +217,16 @@ public class Parser {
             functionArgs.setRight(functionArgs());
         }
         return functionArgs;
+    }
+
+    private Lexeme optionalFunctionArgs() {
+        if (printDebugMessages) log("optionalFunctionArgs");
+        Lexeme optionalFunctionArgs = new Lexeme(OPTIONAL_FUNCTION_ARGS, currentLexeme.getLineNumber());
+        optionalFunctionArgs.setLeft(functionArg());
+        if (functionArgPending()) {
+            optionalFunctionArgs.setRight(functionArgs());
+        }
+        return optionalFunctionArgs;
     }
 
     private Lexeme block() {
@@ -308,6 +326,36 @@ public class Parser {
         return butStatement;
     }
 
+    private Lexeme changeStatement() {
+        if (printDebugMessages) log("changeStatement");
+        Lexeme changeStatement = new Lexeme(CHANGE_STATEMENT, currentLexeme.getLineNumber());
+        consume(CHANGE_KEYWORD);
+        consume(OPEN_CURLY);
+        changeStatement.setLeft(consume(IDENTIFIER));
+        consume(CLOSED_CURLY);
+        consume(DOUBLE_FORWARD);
+        changeStatement.setRight(cases());
+        consume(DOUBLE_BACKWARD);
+        consume(BANGBANG);
+        return changeStatement;
+    }
+
+    private Lexeme cases() {
+        if (printDebugMessages) log("cases");
+        Lexeme cases = new Lexeme(CASES, currentLexeme.getLineNumber());
+        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        consume(CASE_KEYWORD);
+        consume(OPEN_CURLY);
+        glue.setLeft(expression());
+        consume(CLOSED_CURLY);
+        glue.setRight(block());
+        cases.setLeft(glue);
+        if (casePending()) {
+            cases.setRight(cases());
+        }
+        return cases;
+    }
+
     private Lexeme binaryExpression() {
         if (printDebugMessages) log("binaryExpression");
         Lexeme binaryExpression = new Lexeme(BINARY_EXPRESSION, currentLexeme.getLineNumber());
@@ -350,7 +398,7 @@ public class Parser {
         return unaryExpression;
     }
 
-    private Lexeme operatorAssignment() {
+    private Lexeme operatorAssignment() { // TODO clean up
         if (printDebugMessages) log("operatorAssignment");
         if (check(PLUS_ASSIGNMENT)) return consume(PLUS_ASSIGNMENT);
         else if (check(MINUS_ASSIGNMENT)) return consume(MINUS_ASSIGNMENT);
@@ -500,6 +548,7 @@ public class Parser {
                 || functionDefinitionPending()
                 || loopPending()
                 || ifStatementPending()
+                || changeStatementPending()
                 || commentPending()
                 || expressionPending();
     }
@@ -530,6 +579,14 @@ public class Parser {
 
     private boolean butStatementPending() {
         return check(BUT_KEYWORD);
+    }
+
+    private boolean changeStatementPending() {
+        return check(CHANGE_KEYWORD);
+    }
+
+    private boolean casePending() {
+        return check(CASE_KEYWORD);
     }
 
     private boolean commentPending() {

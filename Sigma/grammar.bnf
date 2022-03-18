@@ -1,8 +1,6 @@
 // https://github.com/deancureton/Sigma/blob/main/Sigma/Grammar/grammar.bnf
 
-// TODO add switch (change) statement
 // TODO fix booleans (?)
-// TODO fix optional function arguments
 
 program ::= [statementList]
 statementList ::= statement+
@@ -11,6 +9,7 @@ statement ::= ( variableDeclaration "‼️" )
             | functionDefinition
             | loop
             | ifStatement
+            | changeStatement
             | comment
             | ( expression "‼️" )
 
@@ -18,7 +17,7 @@ variableDeclaration ::= "var" IDENTIFIER ["<-" expression]
 
 assignment ::= IDENTIFIER regularAssignment | unaryOperator IDENTIFIER
 
-functionDefinition ::= "func" IDENTIFIER "<-" functionArgs block "‼️"
+functionDefinition ::= "func" IDENTIFIER "<-" functionArgs ["[" optionalFunctionArgs "]"] block "‼️"
 functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
 callArguments ::= primary*
 
@@ -34,6 +33,9 @@ butifStatementList ::= butifStatement*
 butifStatement ::= "butif" "{" expression "}" block
 butStatement ::= "but" block
 
+changeStatement ::= "change" "{" IDENTIFIER "}" "»" case+ "«" "‼️"
+case ::= "case" "{" expression "}" block
+
 comment ::= singleLineComment | multiLineComment
 singleLineComment ::= "\\" COMMENTTEXT
 multiLineComment ::= "\\." COMMENTTEXT ".\\"
@@ -45,7 +47,8 @@ unaryOperator ::= "++" | "--" | "not" | "!" | "-"
 regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
 
-functionArgs ::= functionArg* ["[" functionArg+ "]"]
+functionArgs ::= functionArg*
+optionalFunctionArgs ::= functionArg+
 functionArg ::= "var" IDENTIFIER
 
 block ::= "»" [statementList] "«"

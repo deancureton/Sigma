@@ -48,6 +48,8 @@ public class Lexer {
         keywords.put("xnor", XNOR_KEYWORD);
         keywords.put("implies", IMPLIES_KEYWORD);
         keywords.put("if", IF_KEYWORD);
+        keywords.put("change", CHANGE_KEYWORD);
+        keywords.put("case", CASE_KEYWORD);
         keywords.put("butif", BUTIF_KEYWORD);
         keywords.put("but", BUT_KEYWORD);
         keywords.put("true", TRUE_KEYWORD);
@@ -134,6 +136,10 @@ public class Lexer {
                 return new Lexeme(OPEN_PAREN, lineNumber);
             case ')':
                 return new Lexeme(CLOSED_PAREN, lineNumber);
+            case '[':
+                return new Lexeme(OPEN_SQUARE, lineNumber);
+            case ']':
+                return new Lexeme(CLOSED_SQUARE, lineNumber);
             case '≥':
                 return new Lexeme(GEQ, lineNumber);
             case '≤':
@@ -193,7 +199,7 @@ public class Lexer {
             case '\\':
                 return lexComment();
             case '.':
-                if (match('\\')) return new Lexeme(PERIOD_BACKSLASH, lineNumber);
+                if (match('\\')) Sigma.syntaxError("Misplaced comment symbol", lineNumber);
                 return new Lexeme(PERIOD, lineNumber);
             case '!':
                 if (match('?')) {
