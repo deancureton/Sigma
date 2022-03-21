@@ -1,0 +1,3 @@
+when { {not a.num} ? 0 } »
+    \code
+«

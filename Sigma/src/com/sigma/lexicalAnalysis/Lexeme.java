@@ -1,5 +1,7 @@
 package com.sigma.lexicalAnalysis;
 
+import java.util.ArrayList;
+
 public class Lexeme {
     // Instance Variables
     private final TokenType type;
@@ -9,7 +11,7 @@ public class Lexeme {
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
 
-    private Lexeme left, right;
+    private final ArrayList<Lexeme> children = new ArrayList<Lexeme>();
 
     // Constructors
     public Lexeme(TokenType type, int lineNumber) {
@@ -56,20 +58,12 @@ public class Lexeme {
         return this.boolVal;
     }
 
-    public void setLeft(Lexeme left) {
-        this.left = left;
+    public void addChild(Lexeme child) {
+        this.children.add(child);
     }
 
-    public void setRight(Lexeme right) {
-        this.right = right;
-    }
-
-    public Lexeme getLeft() {
-        return left;
-    }
-
-    public Lexeme getRight() {
-        return right;
+    public Lexeme getChild(int index) {
+        return this.children.get(index);
     }
 
     // toString
@@ -91,21 +85,14 @@ public class Lexeme {
 
     public void printTree(Lexeme root, int indents) {
         System.out.print(root);
-        if (root.getLeft() != null) {
-            System.out.print('\n');
-            for (int i = 0; i < indents + 1; i++) {
-                System.out.print('\t');
+        for (Lexeme lexeme : root.children) {
+            if (lexeme != null) {
+                System.out.print('\n');
+                for (int i = 0; i < indents + 1; i++) {
+                    System.out.print('\t');
+                }
+                printTree(lexeme, indents + 1);
             }
-            System.out.print("left: ");
-            printTree(root.getLeft(), indents + 1);
-        }
-        if (root.getRight() != null) {
-            System.out.print('\n');
-            for (int i = 0; i < indents + 1; i++) {
-                System.out.print('\t');
-            }
-            System.out.print("right: ");
-            printTree(root.getRight(), indents + 1);
         }
     }
 

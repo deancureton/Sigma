@@ -16,7 +16,8 @@ for { var x <- 3‼ x < 5‼ ++x } »
 foreach { var x of y } »
     a +<- 3‼
 «
-when { {not a.num} ? 0 } »
+\ when { {not a.num} ? 0 } » (broken)
+when { a ? 0 } »
     \code
 «
 loop { 3 } »
@@ -42,6 +43,9 @@ if {5 + 5} »
 
 change {identifier} »
     case {primary} »
+        \code
+    «
+    case {2} »
         \code
     «
 «

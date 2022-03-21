@@ -11,6 +11,7 @@ import static com.sigma.lexicalAnalysis.TokenType.*;
 
 // TODO something like {not a.num} ? 0 or a.num ? 0 does not work, doesn't recognize it as a binary expression
 // TODO fix that weird binary expression yellow thing
+// TODO order of operations
 
 public class Parser {
     private static final boolean printDebugMessages = false;
@@ -54,15 +55,16 @@ public class Parser {
     public Lexeme program() {
         if (printDebugMessages) log("program");
         Lexeme program = new Lexeme(PROGRAM, currentLexeme.getLineNumber());
-        if (statementListPending()) program.setLeft(statementList());
+        if (statementListPending()) program.addChild(statementList());
         return program;
     }
 
     private Lexeme statementList() {
         if (printDebugMessages) log("statementList");
         Lexeme statementList = new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber());
-        statementList.setLeft(statement());
-        if (statementPending()) statementList.setRight(statementList());
+        while (statementPending()) {
+            statementList.addChild(statement());
+        }
         return statementList;
     }
 
@@ -91,10 +93,10 @@ public class Parser {
         if (printDebugMessages) log("variableDeclaration");
         consume(VAR_KEYWORD);
         Lexeme declaration = new Lexeme(VARIABLE_DECLARATION, currentLexeme.getLineNumber());
-        declaration.setLeft(consume(IDENTIFIER));
+        declaration.addChild(consume(IDENTIFIER));
         if (check(ASSIGN_OPERATOR)) {
             consume(ASSIGN_OPERATOR);
-            declaration.setRight(expression());
+            declaration.addChild(expression());
         }
         return declaration;
     }
@@ -102,15 +104,12 @@ public class Parser {
     private Lexeme assignment() {
         if (printDebugMessages) log("assignment");
         Lexeme assignment = new Lexeme(ASSIGNMENT, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         if (unaryOperatorPending()) {
-            glue.setLeft(unaryOperator());
-            glue.setRight(consume(IDENTIFIER));
-            assignment.setRight(glue);
+            assignment.addChild(unaryOperator());
+            assignment.addChild(consume(IDENTIFIER));
         } else if (check(IDENTIFIER)) {
-            glue.setLeft(consume(IDENTIFIER));
-            glue.setRight(regularAssignment());
-            assignment.setLeft(glue);
+            assignment.addChild(consume(IDENTIFIER));
+            assignment.addChild(regularAssignment());
         } else error("Expected assignment operator.");
         return assignment;
     }
@@ -118,20 +117,16 @@ public class Parser {
     private Lexeme functionDefinition() {
         if (printDebugMessages) log("functionDefinition");
         Lexeme funcDef = new Lexeme(FUNCTION_DEFINITION, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
-        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FUNC_KEYWORD);
-        glue.setLeft(consume(IDENTIFIER));
+        funcDef.addChild(consume(IDENTIFIER));
         consume(ASSIGN_OPERATOR);
-        glue2.setLeft(functionArgs());
+        funcDef.addChild(functionArgs());
         if (check(OPEN_SQUARE)) {
             consume(OPEN_SQUARE);
-            glue2.setRight(optionalFunctionArgs());
+            funcDef.addChild(optionalFunctionArgs());
             consume(CLOSED_SQUARE);
         }
-        glue.setRight(glue2);
-        funcDef.setLeft(glue);
-        funcDef.setRight(block());
+        funcDef.addChild(block());
         consume(BANGBANG);
         return funcDef;
     }
@@ -149,17 +144,13 @@ public class Parser {
     private Lexeme ifStatement() {
         if (printDebugMessages) log("ifStatement");
         Lexeme ifStatement = new Lexeme(IF_STATEMENT, currentLexeme.getLineNumber());
-        Lexeme glue1 = new Lexeme(GLUE, currentLexeme.getLineNumber());
-        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(IF_KEYWORD);
-        glue1.setLeft(parenthesizedExpression());
-        glue2.setRight(block());
+        ifStatement.addChild(parenthesizedExpression());
+        ifStatement.addChild(block());
         if (butifStatementPending()) {
-            glue2.setLeft(butifStatementList());
+            ifStatement.addChild(butifStatementList());
         }
-        if (butStatementPending()) glue2.setRight(butStatement());
-        ifStatement.setLeft(glue1);
-        ifStatement.setRight(glue2);
+        if (butStatementPending()) ifStatement.addChild(butStatement());
         return ifStatement;
     }
 
@@ -189,10 +180,10 @@ public class Parser {
     private Lexeme regularAssignment() {
         if (printDebugMessages) log("regularAssignment");
         Lexeme regularAssignment = new Lexeme(REGULAR_ASSIGNMENT, currentLexeme.getLineNumber());
-        if (check(ASSIGN_OPERATOR)) regularAssignment.setLeft(consume(ASSIGN_OPERATOR));
-        else if (operatorAssignmentPending()) regularAssignment.setLeft(operatorAssignment());
+        if (check(ASSIGN_OPERATOR)) regularAssignment.addChild(consume(ASSIGN_OPERATOR));
+        else if (operatorAssignmentPending()) regularAssignment.addChild(operatorAssignment());
         else error("Expected assignment operator.");
-        regularAssignment.setRight(expression());
+        regularAssignment.addChild(expression());
         return regularAssignment;
     }
 
@@ -210,11 +201,8 @@ public class Parser {
     private Lexeme functionArgs() {
         if (printDebugMessages) log("functionArgs");
         Lexeme functionArgs = new Lexeme(FUNCTION_ARGS, currentLexeme.getLineNumber());
-        if (functionArgPending()) {
-            functionArgs.setLeft(functionArg());
-        }
-        if (functionArgPending()) {
-            functionArgs.setRight(functionArgs());
+        while (functionArgPending()) {
+            functionArgs.addChild(functionArg());
         }
         return functionArgs;
     }
@@ -222,9 +210,9 @@ public class Parser {
     private Lexeme optionalFunctionArgs() {
         if (printDebugMessages) log("optionalFunctionArgs");
         Lexeme optionalFunctionArgs = new Lexeme(OPTIONAL_FUNCTION_ARGS, currentLexeme.getLineNumber());
-        optionalFunctionArgs.setLeft(functionArg());
-        if (functionArgPending()) {
-            optionalFunctionArgs.setRight(functionArgs());
+        optionalFunctionArgs.addChild(functionArg());
+        while (functionArgPending()) {
+            optionalFunctionArgs.addChild(functionArg());
         }
         return optionalFunctionArgs;
     }
@@ -243,35 +231,29 @@ public class Parser {
     private Lexeme forLoop() {
         if (printDebugMessages) log("forLoop");
         Lexeme forLoop = new Lexeme(FOR_LOOP, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
-        Lexeme glue2 = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FOR_KEYWORD);
         consume(OPEN_CURLY);
-        glue2.setLeft(variableDeclaration());
+        forLoop.addChild(variableDeclaration());
         consume(BANGBANG);
-        glue2.setRight(expression());
+        forLoop.addChild(expression());
         consume(BANGBANG);
-        glue.setRight(assignment());
+        forLoop.addChild(assignment());
         consume(CLOSED_CURLY);
-        forLoop.setRight(block());
-        glue.setLeft(glue2);
-        forLoop.setLeft(glue);
+        forLoop.addChild(block());
         return forLoop;
     }
 
     private Lexeme foreachLoop() {
         if (printDebugMessages) log("foreachLoop");
         Lexeme foreachLoop = new Lexeme(FOREACH_LOOP, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         consume(FOREACH_KEYWORD);
         consume(OPEN_CURLY);
         consume(VAR_KEYWORD);
-        glue.setLeft(consume(IDENTIFIER));
+        foreachLoop.addChild(consume(IDENTIFIER));
         consume(OF_KEYWORD);
-        glue.setRight(consume(IDENTIFIER));
+        foreachLoop.addChild(consume(IDENTIFIER));
         consume(CLOSED_CURLY);
-        foreachLoop.setLeft(glue);
-        foreachLoop.setRight(block());
+        foreachLoop.addChild(block());
         return foreachLoop;
     }
 
@@ -280,9 +262,9 @@ public class Parser {
         Lexeme whenLoop = new Lexeme(WHEN_LOOP, currentLexeme.getLineNumber());
         consume(WHEN_KEYWORD);
         consume(OPEN_CURLY);
-        whenLoop.setLeft(expression());
+        whenLoop.addChild(expression());
         consume(CLOSED_CURLY);
-        whenLoop.setRight(block());
+        whenLoop.addChild(block());
         return whenLoop;
     }
 
@@ -291,20 +273,17 @@ public class Parser {
         Lexeme loopLoop = new Lexeme(LOOP_LOOP, currentLexeme.getLineNumber());
         consume(LOOP_KEYWORD);
         consume(OPEN_CURLY);
-        loopLoop.setLeft(consume(NUMBER));
+        loopLoop.addChild(consume(NUMBER));
         consume(CLOSED_CURLY);
-        loopLoop.setRight(block());
+        loopLoop.addChild(block());
         return loopLoop;
     }
 
     private Lexeme butifStatementList() {
         if (printDebugMessages) log("butifStatementList");
         Lexeme butifStatementList = new Lexeme(BUTIF_STATEMENT_LIST, currentLexeme.getLineNumber());
-        if (butifStatementPending()) {
-            butifStatementList.setLeft(butifStatement());
-        }
-        if (butifStatementPending()) {
-            butifStatementList.setRight(butifStatementList());
+        while (butifStatementPending()) {
+            butifStatementList.addChild(butifStatement());
         }
         return butifStatementList;
     }
@@ -313,8 +292,8 @@ public class Parser {
         if (printDebugMessages) log("butifStatement");
         Lexeme butIfStatement = new Lexeme(BUTIF_STATEMENT, currentLexeme.getLineNumber());
         consume(BUTIF_KEYWORD);
-        butIfStatement.setLeft(parenthesizedExpression());
-        butIfStatement.setRight(block());
+        butIfStatement.addChild(parenthesizedExpression());
+        butIfStatement.addChild(block());
         return butIfStatement;
     }
 
@@ -322,7 +301,7 @@ public class Parser {
         if (printDebugMessages) log("butStatement");
         Lexeme butStatement = new Lexeme(BUT_STATEMENT, currentLexeme.getLineNumber());
         consume(BUT_KEYWORD);
-        butStatement.setLeft(block());
+        butStatement.addChild(block());
         return butStatement;
     }
 
@@ -331,29 +310,34 @@ public class Parser {
         Lexeme changeStatement = new Lexeme(CHANGE_STATEMENT, currentLexeme.getLineNumber());
         consume(CHANGE_KEYWORD);
         consume(OPEN_CURLY);
-        changeStatement.setLeft(consume(IDENTIFIER));
+        changeStatement.addChild(consume(IDENTIFIER));
         consume(CLOSED_CURLY);
         consume(DOUBLE_FORWARD);
-        changeStatement.setRight(cases());
+        changeStatement.addChild(changeCases());
         consume(DOUBLE_BACKWARD);
         consume(BANGBANG);
         return changeStatement;
     }
 
-    private Lexeme cases() {
+    private Lexeme changeCases() {
         if (printDebugMessages) log("cases");
-        Lexeme cases = new Lexeme(CASES, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
+        Lexeme changeCases = new Lexeme(CHANGE_CASES, currentLexeme.getLineNumber());
+        changeCases.addChild(changeCase());
+        if (changeCasePending()) {
+            changeCases.addChild(changeCase());
+        }
+        return changeCases;
+    }
+
+    private Lexeme changeCase() {
+        if (printDebugMessages) log("case");
+        Lexeme changeCase = new Lexeme(CHANGE_CASE, currentLexeme.getLineNumber());
         consume(CASE_KEYWORD);
         consume(OPEN_CURLY);
-        glue.setLeft(expression());
+        changeCase.addChild(expression());
         consume(CLOSED_CURLY);
-        glue.setRight(block());
-        cases.setLeft(glue);
-        if (casePending()) {
-            cases.setRight(cases());
-        }
-        return cases;
+        changeCase.addChild(block());
+        return changeCase;
     }
 
     private Lexeme binaryExpression() {
@@ -361,15 +345,15 @@ public class Parser {
         Lexeme binaryExpression = new Lexeme(BINARY_EXPRESSION, currentLexeme.getLineNumber());
         Lexeme firstOperand = primary();
         Lexeme binaryOperator = binaryOperator();
-        if (binaryExpressionPending()) binaryOperator.setRight(binaryExpression());
-        else if (primaryPending()) binaryOperator.setRight(primary());
+        binaryOperator.addChild(firstOperand);
+        if (binaryExpressionPending()) binaryOperator.addChild(binaryExpression());
+        else if (primaryPending()) binaryOperator.addChild(primary());
         else error("Expected primary or further expression.");
-        binaryOperator.setLeft(firstOperand);
-        binaryExpression.setLeft(binaryOperator);
+        binaryExpression.addChild(binaryOperator);
         return binaryExpression;
     }
 
-    private Lexeme primary() {
+    private Lexeme primary() { // TODO add binary expression case
         if (printDebugMessages) log("primary");
         if (unaryExpressionPending()) return unaryExpression();
         else if (check(NUMBER)) return consume(NUMBER);
@@ -386,14 +370,11 @@ public class Parser {
     private Lexeme unaryExpression() {
         if (printDebugMessages) log("unaryExpression");
         Lexeme unaryExpression = new Lexeme(UNARY_EXPRESSION, currentLexeme.getLineNumber());
-        Lexeme glue = new Lexeme(GLUE, currentLexeme.getLineNumber());
         if (unaryOperatorPending()) {
-            glue.setLeft(unaryOperator());
-            glue.setRight(primary());
-            unaryExpression.setLeft(glue);
+            unaryExpression.addChild(unaryOperator());
+            unaryExpression.addChild(primary());
         } else if (parenthesizedExpressionPending()) {
-            glue.setLeft(parenthesizedExpression());
-            unaryExpression.setRight(glue);
+            unaryExpression.addChild(parenthesizedExpression());
         } else error("Expected unary expression.");
         return unaryExpression;
     }
@@ -445,18 +426,18 @@ public class Parser {
     private Lexeme cast() {
         if (printDebugMessages) log("cast");
         Lexeme cast = new Lexeme(CAST, currentLexeme.getLineNumber());
-        cast.setLeft(consume(IDENTIFIER));
+        cast.addChild(consume(IDENTIFIER));
         consume(PERIOD);
-        cast.setRight(type());
+        cast.addChild(type());
         return cast;
     }
 
     private Lexeme functionCall() {
         if (printDebugMessages) log("functionCall");
         Lexeme functionCall = new Lexeme(FUNCTION_CALL, currentLexeme.getLineNumber());
-        functionCall.setLeft(consume(IDENTIFIER));
+        functionCall.addChild(consume(IDENTIFIER));
         consume(OPEN_CURLY);
-        functionCall.setRight(callArguments());
+        functionCall.addChild(callArguments());
         consume(CLOSED_CURLY);
         return functionCall;
     }
@@ -516,11 +497,8 @@ public class Parser {
     private Lexeme arrayElements() {
         if (printDebugMessages) log("arrayElements");
         Lexeme arrayElements = new Lexeme(ARRAY_ELEMENTS, currentLexeme.getLineNumber());
-        if (primaryPending()) {
-            arrayElements.setLeft(primary());
-        }
-        if (primaryPending()) {
-            arrayElements.setRight(arrayElements());
+        while (primaryPending()) {
+            arrayElements.addChild(primary());
         }
         return arrayElements;
     }
@@ -528,11 +506,8 @@ public class Parser {
     private Lexeme callArguments() {
         if (printDebugMessages) log("callArguments");
         Lexeme callArguments = new Lexeme(CALL_ARGUMENTS, currentLexeme.getLineNumber());
-        if (primaryPending()) {
-            callArguments.setLeft(primary());
-        }
-        if (primaryPending()) {
-            callArguments.setRight(callArguments());
+        while (primaryPending()) {
+            callArguments.addChild(primary());
         }
         return callArguments;
     }
@@ -585,7 +560,7 @@ public class Parser {
         return check(CHANGE_KEYWORD);
     }
 
-    private boolean casePending() {
+    private boolean changeCasePending() {
         return check(CASE_KEYWORD);
     }
 
