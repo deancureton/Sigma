@@ -17,8 +17,8 @@ variableDeclaration ::= "var" IDENTIFIER ["<-" expression]
 
 assignment ::= IDENTIFIER regularAssignment | unaryOperator IDENTIFIER
 
-functionDefinition ::= "func" IDENTIFIER "<-" functionArgs ["|" optionalFunctionArgs] block "‼️"
-functionCall ::= IDENTIFIER "[" callArguments "]" "‼️"
+functionDefinition ::= "func" IDENTIFIER "<-" functionArgs ["[" optionalFunctionArgs "]"] block "‼️"
+functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
 callArguments ::= primary*
 
 loop ::= forLoop | foreachLoop | whenLoop | loopLoop
