@@ -8,11 +8,6 @@ import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-
-// TODO something like {not a.num} ? 0 or a.num ? 0 does not work, doesn't recognize it as a binary expression
-// TODO fix that weird binary expression yellow thing
-// TODO order of operations
-
 public class Parser {
     private static final boolean printDebugMessages = false;
     private final ArrayList<Lexeme> lexemes;
@@ -39,10 +34,17 @@ public class Parser {
     private Lexeme consume(TokenType expected) {
         Lexeme returnLexeme = null;
         if (check(expected)) {
-            if (printDebugMessages) log(expected.toString());
+            log(expected.toString());
             returnLexeme = currentLexeme;
             advance();
         } else error("Expected " + expected + " but found " + currentLexeme + ".");
+        return returnLexeme;
+    }
+
+    private Lexeme consume() {
+        log(currentLexeme.getType().toString());
+        Lexeme returnLexeme = currentLexeme;
+        advance();
         return returnLexeme;
     }
 
@@ -53,14 +55,14 @@ public class Parser {
 
     // Consumption functions
     public Lexeme program() {
-        if (printDebugMessages) log("program");
+        log("program");
         Lexeme program = new Lexeme(PROGRAM, currentLexeme.getLineNumber());
         if (statementListPending()) program.addChild(statementList());
         return program;
     }
 
     private Lexeme statementList() {
-        if (printDebugMessages) log("statementList");
+        log("statementList");
         Lexeme statementList = new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber());
         while (statementPending()) {
             statementList.addChild(statement());
@@ -70,7 +72,7 @@ public class Parser {
 
     private Lexeme statement() {
         Lexeme statement = null;
-        if (printDebugMessages) log("statement");
+        log("statement");
         if (variableDeclarationPending()) {
             statement = variableDeclaration();
             consume(BANGBANG);
@@ -90,7 +92,7 @@ public class Parser {
     }
 
     private Lexeme variableDeclaration() {
-        if (printDebugMessages) log("variableDeclaration");
+        log("variableDeclaration");
         consume(VAR_KEYWORD);
         Lexeme declaration = new Lexeme(VARIABLE_DECLARATION, currentLexeme.getLineNumber());
         declaration.addChild(consume(IDENTIFIER));
@@ -102,10 +104,13 @@ public class Parser {
     }
 
     private Lexeme assignment() {
-        if (printDebugMessages) log("assignment");
+        log("assignment");
         Lexeme assignment = new Lexeme(ASSIGNMENT, currentLexeme.getLineNumber());
-        if (unaryOperatorPending()) {
-            assignment.addChild(unaryOperator());
+        if (check(INCREMENT)) {
+            assignment.addChild(consume(INCREMENT));
+            assignment.addChild(consume(IDENTIFIER));
+        } else if (check(DECREMENT)) {
+            assignment.addChild(consume(DECREMENT));
             assignment.addChild(consume(IDENTIFIER));
         } else if (check(IDENTIFIER)) {
             assignment.addChild(consume(IDENTIFIER));
@@ -115,7 +120,7 @@ public class Parser {
     }
 
     private Lexeme functionDefinition() {
-        if (printDebugMessages) log("functionDefinition");
+        log("functionDefinition");
         Lexeme funcDef = new Lexeme(FUNCTION_DEFINITION, currentLexeme.getLineNumber());
         consume(FUNC_KEYWORD);
         funcDef.addChild(consume(IDENTIFIER));
@@ -132,7 +137,7 @@ public class Parser {
     }
 
     private Lexeme loop() {
-        if (printDebugMessages) log("loop");
+        log("loop");
         if (forLoopPending()) return forLoop();
         else if (foreachLoopPending()) return foreachLoop();
         else if (whenLoopPending()) return whenLoop();
@@ -142,10 +147,12 @@ public class Parser {
     }
 
     private Lexeme ifStatement() {
-        if (printDebugMessages) log("ifStatement");
+        log("ifStatement");
         Lexeme ifStatement = new Lexeme(IF_STATEMENT, currentLexeme.getLineNumber());
         consume(IF_KEYWORD);
-        ifStatement.addChild(parenthesizedExpression());
+        consume(OPEN_CURLY);
+        ifStatement.addChild(expression());
+        consume(CLOSED_CURLY);
         ifStatement.addChild(block());
         if (butifStatementPending()) {
             ifStatement.addChild(butifStatementList());
@@ -155,20 +162,165 @@ public class Parser {
     }
 
     private Lexeme comment() {
-        if (printDebugMessages) log("comment");
+        log("comment");
         return consume(COMMENT);
     }
 
     private Lexeme expression() {
-        if (printDebugMessages) log("expression");
-        if (binaryExpressionPending()) return binaryExpression();
-        else if (primaryPending()) return primary();
-        else error("Expression expected.");
+        log("expression");
+        /*Lexeme expression = new Lexeme(EXPRESSION, currentLexeme.getLineNumber());
+        expression.addChild(orExpr());
+        return expression;*/
+        return orExpr();
+    }
+
+    private Lexeme orExpr() {
+        log("orExpr");
+        Lexeme xorExpr = xorExpr();
+        if (check(OR_KEYWORD) || check(NOR_KEYWORD) || check(IMPLIES_KEYWORD)) {
+            Lexeme orOperator = consume();
+            orOperator.addChild(xorExpr);
+            orOperator.addChild(orExpr());
+            return orOperator;
+        }
+        return xorExpr;
+    }
+
+    private Lexeme xorExpr() {
+        log("xorExpr");
+        Lexeme andExpr = andExpr();
+        if (check(XOR_KEYWORD) || check(XNOR_KEYWORD)) {
+            Lexeme xorOperator = consume();
+            xorOperator.addChild(andExpr);
+            xorOperator.addChild(xorExpr());
+            return xorOperator;
+        }
+        return andExpr;
+    }
+
+    private Lexeme andExpr() {
+        log("andExpr");
+        Lexeme weakEqualityExpr = weakEqualityExpr();
+        if (check(AND_KEYWORD) || check(NAND_KEYWORD)) {
+            Lexeme andOperator = consume();
+            andOperator.addChild(weakEqualityExpr);
+            andOperator.addChild(andExpr());
+            return andOperator;
+        }
+        return weakEqualityExpr;
+    }
+
+    private Lexeme weakEqualityExpr() {
+        log("weakEqualityExpr");
+        Lexeme equalityExpr = equalityExpr();
+        if (check(DOUBLE_QUESTION) || check(NOT_DOUBLE_QUESTION) || check(APPROX) || check(NOT_APPROX)) {
+            Lexeme weakEqualityOperator = consume();
+            weakEqualityOperator.addChild(equalityExpr);
+            weakEqualityOperator.addChild(weakEqualityExpr());
+            return weakEqualityOperator;
+        }
+        return equalityExpr;
+    }
+
+    private Lexeme equalityExpr() {
+        log("equalityExpr");
+        Lexeme comparisonExpr = comparisonExpr();
+        if (check(QUESTION) || check(NOT_QUESTION)) {
+            Lexeme equalityOperator = consume();
+            equalityOperator.addChild(comparisonExpr);
+            equalityOperator.addChild(equalityExpr());
+            return equalityOperator;
+        }
+        return comparisonExpr;
+    }
+
+    private Lexeme comparisonExpr() {
+        log("comparisonExpr");
+        Lexeme sumExpr = sumExpr();
+        if (check(LESS) || check(GREATER) || check(LESS_QUESTION) || check(GREATER_QUESTION) || check(GEQ) || check(LEQ)) {
+            Lexeme comparisonOperator = consume();
+            comparisonOperator.addChild(sumExpr);
+            comparisonOperator.addChild(comparisonExpr());
+            return comparisonOperator;
+        }
+        return sumExpr;
+    }
+
+    private Lexeme sumExpr() {
+        log("sumExpr");
+        Lexeme productExpr = productExpr();
+        if (check(PLUS) || check(MINUS)) {
+            Lexeme sumOperator = consume();
+            sumOperator.addChild(productExpr);
+            sumOperator.addChild(sumExpr());
+            return sumOperator;
+        }
+        return productExpr;
+    }
+    
+    private Lexeme productExpr() {
+        log("productExpr");
+        Lexeme exponentExpr = exponentExpr();
+        if (check(TIMES) || check(DOUBLE_DIVIDE) || check(DIVIDE) || check(PERCENT)) {
+            Lexeme productOperator = consume();
+            productOperator.addChild(exponentExpr);
+            productOperator.addChild(productExpr());
+            return productOperator;
+        }
+        return exponentExpr;
+    }
+
+    private Lexeme exponentExpr() {
+        log("exponentExpr");
+        Lexeme unaryExpr = unaryExpr();
+        if (check(CARET)) {
+            Lexeme exponentOperator = consume(CARET);
+            exponentOperator.addChild(unaryExpr);
+            exponentOperator.addChild(exponentExpr());
+            return exponentOperator;
+        }
+        return unaryExpr;
+    }
+
+    private Lexeme unaryExpr() {
+        log("unaryExpr");
+        if (check(EXCLAMATION) || check(NOT_KEYWORD) || check(MINUS) || check(INCREMENT) || check(DECREMENT)) {
+            Lexeme unaryOperator = consume();
+            unaryOperator.addChild(unaryExpr());
+            return unaryOperator;
+        } else if (primaryPending()) {
+            return primary();
+        } else {
+            error("Expected unary expression.");
+            return null;
+        }
+    }
+
+    private Lexeme primary() {
+        log("primary");
+        if (functionCallPending()) return functionCall();
+        else if (castPending()) return cast();
+        else if (check(NUMBER)) return consume(NUMBER);
+        else if (check(IDENTIFIER)) return consume(IDENTIFIER);
+        else if (check(STRING)) return consume(STRING);
+        else if (booleanPending()) return bool();
+        else if (arrayPending()) return array();
+        else if (parenthesizedExpressionPending()) return parenthesizedExpression();
+        else error("Expected primary.");
         return null;
     }
 
+    private Lexeme parenthesizedExpression() {
+        log("parenthesizedExpression");
+        Lexeme parenthesizedExpression;
+        consume(OPEN_CURLY);
+        parenthesizedExpression = expression();
+        consume(CLOSED_CURLY);
+        return parenthesizedExpression;
+    }
+
     private Lexeme type() {
-        if (printDebugMessages) log("type");
+        log("type");
         if (check(STR_KEYWORD)) return consume(STR_KEYWORD);
         else if (check(NUM_KEYWORD)) return consume(NUM_KEYWORD);
         else if (check(TF_KEYWORD)) return consume(TF_KEYWORD);
@@ -178,7 +330,7 @@ public class Parser {
     }
 
     private Lexeme regularAssignment() {
-        if (printDebugMessages) log("regularAssignment");
+        log("regularAssignment");
         Lexeme regularAssignment = new Lexeme(REGULAR_ASSIGNMENT, currentLexeme.getLineNumber());
         if (check(ASSIGN_OPERATOR)) regularAssignment.addChild(consume(ASSIGN_OPERATOR));
         else if (operatorAssignmentPending()) regularAssignment.addChild(operatorAssignment());
@@ -187,38 +339,27 @@ public class Parser {
         return regularAssignment;
     }
 
-    private Lexeme unaryOperator() {
-        if (printDebugMessages) log("unaryOperator");
-        if (check(INCREMENT)) return consume(INCREMENT);
-        else if (check(DECREMENT)) return consume(DECREMENT);
-        else if (check(NOT_KEYWORD)) return consume(NOT_KEYWORD);
-        else if (check(EXCLAMATION)) return consume(EXCLAMATION);
-        else if (check(MINUS)) return consume(MINUS);
-        else error("Expected unary assignment operator.");
-        return null;
-    }
-
     private Lexeme functionArgs() {
-        if (printDebugMessages) log("functionArgs");
+        log("functionArgs");
         Lexeme functionArgs = new Lexeme(FUNCTION_ARGS, currentLexeme.getLineNumber());
-        while (functionArgPending()) {
-            functionArgs.addChild(functionArg());
+        while (check(IDENTIFIER)) {
+            functionArgs.addChild(consume(IDENTIFIER));
         }
         return functionArgs;
     }
 
     private Lexeme optionalFunctionArgs() {
-        if (printDebugMessages) log("optionalFunctionArgs");
+        log("optionalFunctionArgs");
         Lexeme optionalFunctionArgs = new Lexeme(OPTIONAL_FUNCTION_ARGS, currentLexeme.getLineNumber());
-        optionalFunctionArgs.addChild(functionArg());
-        while (functionArgPending()) {
-            optionalFunctionArgs.addChild(functionArg());
+        optionalFunctionArgs.addChild(consume(IDENTIFIER));
+        while (check(IDENTIFIER)) {
+            optionalFunctionArgs.addChild(consume(IDENTIFIER));
         }
         return optionalFunctionArgs;
     }
 
     private Lexeme block() {
-        if (printDebugMessages) log("block");
+        log("block");
         Lexeme block = null;
         consume(DOUBLE_FORWARD);
         if (statementPending()) {
@@ -229,7 +370,7 @@ public class Parser {
     }
 
     private Lexeme forLoop() {
-        if (printDebugMessages) log("forLoop");
+        log("forLoop");
         Lexeme forLoop = new Lexeme(FOR_LOOP, currentLexeme.getLineNumber());
         consume(FOR_KEYWORD);
         consume(OPEN_CURLY);
@@ -244,7 +385,7 @@ public class Parser {
     }
 
     private Lexeme foreachLoop() {
-        if (printDebugMessages) log("foreachLoop");
+        log("foreachLoop");
         Lexeme foreachLoop = new Lexeme(FOREACH_LOOP, currentLexeme.getLineNumber());
         consume(FOREACH_KEYWORD);
         consume(OPEN_CURLY);
@@ -258,7 +399,7 @@ public class Parser {
     }
 
     private Lexeme whenLoop() {
-        if (printDebugMessages) log("whenLoop");
+        log("whenLoop");
         Lexeme whenLoop = new Lexeme(WHEN_LOOP, currentLexeme.getLineNumber());
         consume(WHEN_KEYWORD);
         consume(OPEN_CURLY);
@@ -269,7 +410,7 @@ public class Parser {
     }
 
     private Lexeme loopLoop() {
-        if (printDebugMessages) log("loopLoop");
+        log("loopLoop");
         Lexeme loopLoop = new Lexeme(LOOP_LOOP, currentLexeme.getLineNumber());
         consume(LOOP_KEYWORD);
         consume(OPEN_CURLY);
@@ -280,7 +421,7 @@ public class Parser {
     }
 
     private Lexeme butifStatementList() {
-        if (printDebugMessages) log("butifStatementList");
+        log("butifStatementList");
         Lexeme butifStatementList = new Lexeme(BUTIF_STATEMENT_LIST, currentLexeme.getLineNumber());
         while (butifStatementPending()) {
             butifStatementList.addChild(butifStatement());
@@ -289,16 +430,18 @@ public class Parser {
     }
 
     private Lexeme butifStatement() {
-        if (printDebugMessages) log("butifStatement");
+        log("butifStatement");
         Lexeme butIfStatement = new Lexeme(BUTIF_STATEMENT, currentLexeme.getLineNumber());
         consume(BUTIF_KEYWORD);
-        butIfStatement.addChild(parenthesizedExpression());
+        consume(OPEN_CURLY);
+        butIfStatement.addChild(expression());
+        consume(CLOSED_CURLY);
         butIfStatement.addChild(block());
         return butIfStatement;
     }
 
     private Lexeme butStatement() {
-        if (printDebugMessages) log("butStatement");
+        log("butStatement");
         Lexeme butStatement = new Lexeme(BUT_STATEMENT, currentLexeme.getLineNumber());
         consume(BUT_KEYWORD);
         butStatement.addChild(block());
@@ -306,7 +449,7 @@ public class Parser {
     }
 
     private Lexeme changeStatement() {
-        if (printDebugMessages) log("changeStatement");
+        log("changeStatement");
         Lexeme changeStatement = new Lexeme(CHANGE_STATEMENT, currentLexeme.getLineNumber());
         consume(CHANGE_KEYWORD);
         consume(OPEN_CURLY);
@@ -320,7 +463,7 @@ public class Parser {
     }
 
     private Lexeme changeCases() {
-        if (printDebugMessages) log("cases");
+        log("cases");
         Lexeme changeCases = new Lexeme(CHANGE_CASES, currentLexeme.getLineNumber());
         changeCases.addChild(changeCase());
         if (changeCasePending()) {
@@ -330,7 +473,7 @@ public class Parser {
     }
 
     private Lexeme changeCase() {
-        if (printDebugMessages) log("case");
+        log("case");
         Lexeme changeCase = new Lexeme(CHANGE_CASE, currentLexeme.getLineNumber());
         consume(CASE_KEYWORD);
         consume(OPEN_CURLY);
@@ -340,47 +483,8 @@ public class Parser {
         return changeCase;
     }
 
-    private Lexeme binaryExpression() {
-        if (printDebugMessages) log("binaryExpression");
-        Lexeme binaryExpression = new Lexeme(BINARY_EXPRESSION, currentLexeme.getLineNumber());
-        Lexeme firstOperand = primary();
-        Lexeme binaryOperator = binaryOperator();
-        binaryOperator.addChild(firstOperand);
-        if (binaryExpressionPending()) binaryOperator.addChild(binaryExpression());
-        else if (primaryPending()) binaryOperator.addChild(primary());
-        else error("Expected primary or further expression.");
-        binaryExpression.addChild(binaryOperator);
-        return binaryExpression;
-    }
-
-    private Lexeme primary() { // TODO add binary expression case
-        if (printDebugMessages) log("primary");
-        if (unaryExpressionPending()) return unaryExpression();
-        else if (check(NUMBER)) return consume(NUMBER);
-        else if (functionCallPending()) return functionCall();
-        else if (castPending()) return cast();
-        else if (check(IDENTIFIER)) return consume(IDENTIFIER);
-        else if (check(STRING)) return consume(STRING);
-        else if (booleanPending()) return bool();
-        else if (arrayPending()) return array();
-        else error("Expected primary.");
-        return null;
-    }
-
-    private Lexeme unaryExpression() {
-        if (printDebugMessages) log("unaryExpression");
-        Lexeme unaryExpression = new Lexeme(UNARY_EXPRESSION, currentLexeme.getLineNumber());
-        if (unaryOperatorPending()) {
-            unaryExpression.addChild(unaryOperator());
-            unaryExpression.addChild(primary());
-        } else if (parenthesizedExpressionPending()) {
-            unaryExpression.addChild(parenthesizedExpression());
-        } else error("Expected unary expression.");
-        return unaryExpression;
-    }
-
     private Lexeme operatorAssignment() { // TODO clean up
-        if (printDebugMessages) log("operatorAssignment");
+        log("operatorAssignment");
         if (check(PLUS_ASSIGNMENT)) return consume(PLUS_ASSIGNMENT);
         else if (check(MINUS_ASSIGNMENT)) return consume(MINUS_ASSIGNMENT);
         else if (check(DIVIDE_ASSIGNMENT)) return consume(DIVIDE_ASSIGNMENT);
@@ -392,23 +496,8 @@ public class Parser {
         return null;
     }
 
-    private Lexeme functionArg() {
-        if (printDebugMessages) log("functionArg");
-        consume(VAR_KEYWORD);
-        return consume(IDENTIFIER);
-    }
-
-    private Lexeme binaryOperator() {
-        if (printDebugMessages) log("binaryOperator");
-        if (binaryArithmeticOperatorPending()) return binaryArithmeticOperator();
-        else if (binaryComparatorPending()) return binaryComparator();
-        else if (binaryBooleanOperatorPending()) return binaryBooleanOperator();
-        else error("Expected binary operator.");
-        return null;
-    }
-
     private Lexeme bool() {
-        if (printDebugMessages) log("boolean");
+        log("boolean");
         if (check(TRUE_KEYWORD)) return consume(TRUE_KEYWORD);
         else if (check(FALS_KEYWORD)) return consume(FALS_KEYWORD);
         else error("Expected boolean.");
@@ -416,7 +505,7 @@ public class Parser {
     }
 
     private Lexeme array() {
-        if (printDebugMessages) log("array");
+        log("array");
         consume(OPEN_PAREN);
         Lexeme arrayElements = arrayElements();
         consume(CLOSED_PAREN);
@@ -424,7 +513,7 @@ public class Parser {
     }
 
     private Lexeme cast() {
-        if (printDebugMessages) log("cast");
+        log("cast");
         Lexeme cast = new Lexeme(CAST, currentLexeme.getLineNumber());
         cast.addChild(consume(IDENTIFIER));
         consume(PERIOD);
@@ -433,7 +522,7 @@ public class Parser {
     }
 
     private Lexeme functionCall() {
-        if (printDebugMessages) log("functionCall");
+        log("functionCall");
         Lexeme functionCall = new Lexeme(FUNCTION_CALL, currentLexeme.getLineNumber());
         functionCall.addChild(consume(IDENTIFIER));
         consume(OPEN_CURLY);
@@ -442,60 +531,8 @@ public class Parser {
         return functionCall;
     }
 
-    private Lexeme parenthesizedExpression() {
-        if (printDebugMessages) log("parenthesizedExpression");
-        consume(OPEN_CURLY);
-        Lexeme expr = expression();
-        consume(CLOSED_CURLY);
-        return expr;
-    }
-
-    private Lexeme binaryArithmeticOperator() {
-        if (printDebugMessages) log("binaryArithmeticOperator");
-        if (check(PLUS)) return consume(PLUS);
-        else if (check(MINUS)) return consume(MINUS);
-        else if (check(DIVIDE)) return consume(DIVIDE);
-        else if (check(TIMES)) return consume(TIMES);
-        else if (check(DOUBLE_DIVIDE)) return consume(DOUBLE_DIVIDE);
-        else if (check(CARET)) return consume(CARET);
-        else if (check(PERCENT)) return consume(PERCENT);
-        else error("Expected binary arithmetic operator.");
-        return null;
-    }
-
-    private Lexeme binaryComparator() {
-        if (printDebugMessages) log("binaryComparator");
-        if (check(GREATER)) return consume(GREATER);
-        else if (check(LESS)) return consume(LESS);
-        else if (check(GREATER_QUESTION)) return consume(GREATER_QUESTION);
-        else if (check(LESS_QUESTION)) return consume(LESS_QUESTION);
-        else if (check(GEQ)) return consume(GEQ);
-        else if (check(LEQ)) return consume(LEQ);
-        else if (check(QUESTION)) return consume(QUESTION);
-        else if (check(NOT_QUESTION)) return consume(NOT_QUESTION);
-        else if (check(DOUBLE_QUESTION)) return consume(DOUBLE_QUESTION);
-        else if (check(NOT_DOUBLE_QUESTION)) return consume(NOT_DOUBLE_QUESTION);
-        else if (check(APPROX)) return consume(APPROX);
-        else if (check(NOT_APPROX)) return consume(NOT_APPROX);
-        else error("Expected binary comparator.");
-        return null;
-    }
-
-    private Lexeme binaryBooleanOperator() {
-        if (printDebugMessages) log("binaryBooleanOperator");
-        if (check(AND_KEYWORD)) return consume(AND_KEYWORD);
-        else if (check(OR_KEYWORD)) return consume(OR_KEYWORD);
-        else if (check(NAND_KEYWORD)) return consume(NAND_KEYWORD);
-        else if (check(NOR_KEYWORD)) return consume(NOR_KEYWORD);
-        else if (check(XOR_KEYWORD)) return consume(XOR_KEYWORD);
-        else if (check(XNOR_KEYWORD)) return consume(XNOR_KEYWORD);
-        else if (check(IMPLIES_KEYWORD)) return consume(IMPLIES_KEYWORD);
-        else error("Expected boolean operator.");
-        return null;
-    }
-
     private Lexeme arrayElements() {
-        if (printDebugMessages) log("arrayElements");
+        log("arrayElements");
         Lexeme arrayElements = new Lexeme(ARRAY_ELEMENTS, currentLexeme.getLineNumber());
         while (primaryPending()) {
             arrayElements.addChild(primary());
@@ -504,7 +541,7 @@ public class Parser {
     }
 
     private Lexeme callArguments() {
-        if (printDebugMessages) log("callArguments");
+        log("callArguments");
         Lexeme callArguments = new Lexeme(CALL_ARGUMENTS, currentLexeme.getLineNumber());
         while (primaryPending()) {
             callArguments.addChild(primary());
@@ -533,7 +570,7 @@ public class Parser {
     }
 
     private boolean assignmentPending() {
-        return (check(IDENTIFIER) && regularAssignmentPendingNext()) || (unaryOperatorPending() && checkNext(IDENTIFIER));
+        return (check(IDENTIFIER) && regularAssignmentPendingNext()) || ((check(INCREMENT) || check(DECREMENT)) && checkNext(IDENTIFIER));
     }
 
     private boolean functionDefinitionPending() {
@@ -569,19 +606,55 @@ public class Parser {
     }
 
     private boolean expressionPending() {
-        return binaryExpressionPending() || primaryPending();
+        return orExprPending();
     }
 
-    private boolean typePending() {
-        return check(VAR_KEYWORD) || strictTypePending();
+    private boolean orExprPending() {
+        return xorExprPending();
     }
 
-    private boolean strictTypePending() {
-        return check(STR_KEYWORD) || check(NUM_KEYWORD) || check(TF_KEYWORD) || check(ARR_KEYWORD);
+    private boolean xorExprPending() {
+        return andExprPending();
     }
 
-    private boolean unaryOperatorPending() {
-        return check(INCREMENT) || check(DECREMENT) || check(NOT_KEYWORD) || check(EXCLAMATION) || check(MINUS);
+    private boolean andExprPending() {
+        return weakEqualityExprPending();
+    }
+
+    private boolean weakEqualityExprPending() {
+        return equalityExprPending();
+    }
+
+    private boolean equalityExprPending() {
+        return comparisonExprPending();
+    }
+
+    private boolean comparisonExprPending() {
+        return sumExprPending();
+    }
+
+    private boolean sumExprPending() {
+        return productExprPending();
+    }
+
+    private boolean productExprPending() {
+        return exponentExprPending();
+    }
+
+    private boolean exponentExprPending() {
+        return unaryExprPending();
+    }
+
+    private boolean unaryExprPending() {
+        return primaryPending() || check(EXCLAMATION) || check(NOT_KEYWORD) || check(MINUS);
+    }
+
+    private boolean primaryPending() {
+        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || booleanPending() || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
+    }
+
+    private boolean parenthesizedExpressionPending() {
+        return check(OPEN_CURLY);
     }
 
     private boolean regularAssignmentPendingNext() {
@@ -604,18 +677,6 @@ public class Parser {
         return check(LOOP_KEYWORD);
     }
 
-    private boolean binaryExpressionPending() {
-        return primaryPending() && binaryOperatorPendingNext();
-    }
-
-    private boolean primaryPending() {
-        return unaryExpressionPending() || check(NUMBER) || check(IDENTIFIER) || check(STRING) || booleanPending() || arrayPending() || castPending() || functionCallPending();
-    }
-
-    private boolean unaryExpressionPending() {
-        return unaryOperatorPending() || parenthesizedExpressionPending();
-    }
-
     private boolean operatorAssignmentPending() {
         return check(PLUS_ASSIGNMENT)
                 || check(MINUS_ASSIGNMENT)
@@ -636,80 +697,6 @@ public class Parser {
                 || checkNext(PERCENT_ASSIGNMENT);
     }
 
-    private boolean binaryOperatorPendingNext() {
-        return binaryArithmeticOperatorPendingNext() || binaryComparatorPendingNext() || binaryBooleanOperatorPendingNext();
-    }
-
-    private boolean binaryArithmeticOperatorPending() {
-        return check(PLUS)
-                || check(MINUS)
-                || check(DIVIDE)
-                || check(TIMES)
-                || check(DOUBLE_DIVIDE)
-                || check(CARET)
-                || check(PERCENT);
-    }
-
-    private boolean binaryComparatorPending() {
-        return check(GREATER)
-                || check(LESS)
-                || check(GREATER_QUESTION)
-                || check(LESS_QUESTION)
-                || check(GEQ)
-                || check(LEQ)
-                || check(QUESTION)
-                || check(NOT_QUESTION)
-                || check(DOUBLE_QUESTION)
-                || check(NOT_DOUBLE_QUESTION)
-                || check(APPROX)
-                || check(NOT_APPROX);
-    }
-
-    private boolean binaryBooleanOperatorPending() {
-        return check(AND_KEYWORD)
-                || check(OR_KEYWORD)
-                || check(NAND_KEYWORD)
-                || check(NOR_KEYWORD)
-                || check(XOR_KEYWORD)
-                || check(XNOR_KEYWORD)
-                || check(IMPLIES_KEYWORD);
-    }
-
-    private boolean binaryArithmeticOperatorPendingNext() {
-        return checkNext(PLUS)
-                || checkNext(MINUS)
-                || checkNext(DIVIDE)
-                || checkNext(TIMES)
-                || checkNext(DOUBLE_DIVIDE)
-                || checkNext(CARET)
-                || checkNext(PERCENT);
-    }
-
-    private boolean binaryComparatorPendingNext() {
-        return checkNext(GREATER)
-                || checkNext(LESS)
-                || checkNext(GREATER_QUESTION)
-                || checkNext(LESS_QUESTION)
-                || checkNext(GEQ)
-                || checkNext(LEQ)
-                || checkNext(QUESTION)
-                || checkNext(NOT_QUESTION)
-                || checkNext(DOUBLE_QUESTION)
-                || checkNext(NOT_DOUBLE_QUESTION)
-                || checkNext(APPROX)
-                || checkNext(NOT_APPROX);
-    }
-
-    private boolean binaryBooleanOperatorPendingNext() {
-        return checkNext(AND_KEYWORD)
-                || checkNext(OR_KEYWORD)
-                || checkNext(NAND_KEYWORD)
-                || checkNext(NOR_KEYWORD)
-                || checkNext(XOR_KEYWORD)
-                || checkNext(XNOR_KEYWORD)
-                || checkNext(IMPLIES_KEYWORD);
-    }
-
     private boolean booleanPending() {
         return check(TRUE_KEYWORD) || check(FALS_KEYWORD);
     }
@@ -724,14 +711,6 @@ public class Parser {
 
     private boolean functionCallPending() {
         return check(IDENTIFIER) && checkNext(OPEN_CURLY);
-    }
-
-    private boolean functionArgPending() {
-        return typePending() && checkNext(IDENTIFIER);
-    }
-
-    private boolean parenthesizedExpressionPending() {
-        return check(OPEN_CURLY);
     }
 
     // Debugging

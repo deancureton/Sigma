@@ -1,7 +1,7 @@
 var x <- 3‼
 x <- "str"‼
 ++x‼
-func x <- var num1 var num2 »
+func x <- num1 num2 »
     \code
 «‼
 x { 1 2 3 }‼
@@ -16,8 +16,7 @@ for { var x <- 3‼ x < 5‼ ++x } »
 foreach { var x of y } »
     a +<- 3‼
 «
-\ when { {not a.num} ? 0 } » (broken)
-when { a ? 0 } »
+when { {not a.num} ? 0 } »
     \code
 «
 loop { 3 } »

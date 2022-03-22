@@ -11,7 +11,7 @@ public class Lexeme {
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
 
-    private final ArrayList<Lexeme> children = new ArrayList<Lexeme>();
+    private final ArrayList<Lexeme> children = new ArrayList<>();
 
     // Constructors
     public Lexeme(TokenType type, int lineNumber) {

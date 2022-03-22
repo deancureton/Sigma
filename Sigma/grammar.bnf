@@ -15,7 +15,7 @@ statement ::= ( variableDeclaration "‼️" )
 
 variableDeclaration ::= "var" IDENTIFIER ["<-" expression]
 
-assignment ::= IDENTIFIER regularAssignment | unaryOperator IDENTIFIER
+assignment ::= IDENTIFIER regularAssignment | ("++" | "--") IDENTIFIER
 
 functionDefinition ::= "func" IDENTIFIER "<-" functionArgs ["[" optionalFunctionArgs "]"] block "‼️"
 functionCall ::= IDENTIFIER "{" callArguments "}" "‼️"
@@ -42,32 +42,27 @@ multiLineComment ::= "\\." COMMENTTEXT ".\\"
 
 type ::= "str" | "num" | "tf" | "arr"
 
-unaryOperator ::= "++" | "--" | "not" | "!" | "-"
-
 regularAssignment ::= ("<-" | operatorAssignment) expression
 operatorAssignment ::= "+<-" | "-<-" | "/<-" | "*<-" | "//<-" | "^<-" | "%<-"
 
-functionArgs ::= functionArg*
-optionalFunctionArgs ::= functionArg+
-functionArg ::= "var" IDENTIFIER
+functionArgs ::= IDENTIFIER*
+optionalFunctionArgs ::= IDENTIFIER+
 
 block ::= "»" [statementList] "«"
 
-expression ::= binaryExpression
-             | primary
-
-binaryExpression ::= primary binaryOperator primary
-                   | primary binaryOperator binaryExpression
-
-primary ::= unaryExpression | NUMBER | IDENTIFIER | STRING | boolean | array | cast | functionCall
-
-unaryExpression ::=  parenthesizedExpression | (unaryOperator primary)
+expression ::= orExpr
+orExpr ::= xorExpr [("or" | "nor" | "implies") orExpr]
+xorExpr ::= andExpr [("xor" | "xnor") xorExpr]
+andExpr ::= weakEqualityExpr [("and" | "nand") andExpr]
+weakEqualityExpr ::= equalityExpr [("??" | "!??" | "~" | "!~") weakEqualityExpr]
+equalityExpr ::= comparisonExpr [("?" | "!?") equalityExpr]
+comparisonExpr ::= sumExpr [("<" | ">" | "<?" | ">?" | "≤" | "≥") comparisonExpr]
+sumExpr ::= productExpr [("+" | "-") sumExpr]
+productExpr ::= exponentExpr [("*" | "//" | "/" | "%") sumExpr]
+exponentExpr ::= unaryExpr ["^" exponentExpr]
+unaryExpr ::= ("!" | "not" | "-") unaryExpr | primary
+primary ::= functionCall | cast | NUMBER | IDENTIFIER | STRING | boolean | array | parenthesizedExpression
 parenthesizedExpression ::= "{" expression "}"
-
-binaryOperator ::= binaryArithmeticOperator | binaryComparator | binaryBooleanOperator
-binaryArithmeticOperator ::= "+" | "-" | "/" | "*" | "//" | "^" | "%"
-binaryComparator ::= ">" | "<" | ">?" | "<?" | "≥" | "≤" | "?" | "!?" | "??" | "!??" | "~" | "!~"
-binaryBooleanOperator ::= "and" | "or" | "nand" | "nor" | "xor" | "xnor" | "implies"
 
 boolean ::= "true" | "false"
 
