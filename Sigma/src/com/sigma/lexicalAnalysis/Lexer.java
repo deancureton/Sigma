@@ -146,6 +146,8 @@ public class Lexer {
                 return new Lexeme(LEQ, lineNumber);
             case '~':
                 return new Lexeme(APPROX, lineNumber);
+            case '|':
+                return new Lexeme(VERTICAL_BAR, lineNumber);
 
             // Multiple characters
             case '+':
