@@ -52,8 +52,6 @@ public class Lexer {
         keywords.put("case", CASE_KEYWORD);
         keywords.put("butif", BUTIF_KEYWORD);
         keywords.put("but", BUT_KEYWORD);
-        keywords.put("true", TRUE_KEYWORD);
-        keywords.put("fals", FALS_KEYWORD);
         return keywords;
     }
 
@@ -279,6 +277,9 @@ public class Lexer {
     private Lexeme lexIdentifierOrKeyword() {
         while (isAlphaNumeric(peek())) advance();
         String text = source.substring(startOfCurrentLexeme, currentPosition);
+        if (text.equals("true")) return new Lexeme(BOOLEAN, lineNumber, true);
+        if (text.equals("fals")) return new Lexeme(BOOLEAN, lineNumber, false);
+
         TokenType type = keywords.get(text);
 
         if (type == null) {

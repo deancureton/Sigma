@@ -257,7 +257,7 @@ public class Parser {
         }
         return productExpr;
     }
-    
+
     private Lexeme productExpr() {
         log("productExpr");
         Lexeme exponentExpr = exponentExpr();
@@ -498,8 +498,7 @@ public class Parser {
 
     private Lexeme bool() {
         log("boolean");
-        if (check(TRUE_KEYWORD)) return consume(TRUE_KEYWORD);
-        else if (check(FALS_KEYWORD)) return consume(FALS_KEYWORD);
+        if (check(BOOLEAN)) return consume(BOOLEAN);
         else error("Expected boolean.");
         return null;
     }
@@ -698,7 +697,7 @@ public class Parser {
     }
 
     private boolean booleanPending() {
-        return check(TRUE_KEYWORD) || check(FALS_KEYWORD);
+        return check(BOOLEAN);
     }
 
     private boolean arrayPending() {

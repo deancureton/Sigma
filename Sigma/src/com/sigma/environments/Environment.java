@@ -10,25 +10,33 @@ public class Environment {
     Environment parent;
     ArrayList<Lexeme> names = new ArrayList<>();
     ArrayList<Lexeme> values = new ArrayList<>();
+
     public Environment(Environment parent) {
         this.parent = parent;
     }
 
+    public Environment() {
+        this.parent = null;
+    }
+
     public void add(Lexeme name, Lexeme value) {
+        if (this.softLookup(name)) {
+            Sigma.referenceError("Variable " + name.getStringVal() + " already exists", name);
+        }
         names.add(name);
         values.add(value);
     }
 
-    public void modify(Lexeme name, Lexeme value, Lexeme target) {
+    public void update(Lexeme name, Lexeme value) {
         int index = -1;
         for (int i = 0; i < names.size(); i++) {
             if (names.get(i).equals(name)) index = i;
         }
         if (index == -1) {
             if (this.parent == null) {
-                Sigma.referenceError("Variable " + name.getStringVal() + " not found", target);
+                Sigma.referenceError("Variable " + name.getStringVal() + " not found", name);
             } else {
-                this.parent.modify(name, value, target);
+                this.parent.update(name, value);
             }
         } else {
             values.get(index).setBoolVal(value.getBoolVal());
@@ -37,25 +45,43 @@ public class Environment {
         }
     }
 
-    public Lexeme retrieve(Lexeme name, Lexeme target) {
+    public Lexeme lookup(Lexeme name) {
         int index = -1;
         for (int i = 0; i < names.size(); i++) {
             if (names.get(i).equals(name)) index = i;
         }
         if (index == -1) {
             if (this.parent == null) {
-                Sigma.referenceError("Variable " + name.getStringVal() + " not found", target);
+                Sigma.referenceError("Variable " + name.getStringVal() + " not found", name);
                 return null;
             } else {
-                return this.parent.retrieve(name, target);
+                return this.parent.lookup(name);
             }
         } else {
             return values.get(index);
         }
     }
 
+    private boolean softLookup(Lexeme name) {
+        int index = -1;
+        for (int i = 0; i < names.size(); i++) {
+            if (names.get(i).equals(name)) index = i;
+        }
+        if (index == -1) {
+            if (this.parent == null) {
+                return false;
+            } else {
+                return this.parent.softLookup(name);
+            }
+        } else {
+            return true;
+        }
+    }
+
     public String toString() {
-        if (this.parent == null) return "ID: " + this.hashCode() + "\nNames: " + this.names.toString() + "\nValues: " + this.values.toString();
-        else return "ID: " + this.hashCode() + "\nParent: " + this.parent.hashCode() + "\nNames: " + this.names.toString() + "\nValues: " + this.values.toString();
+        if (this.parent == null)
+            return "ID: " + this.hashCode() + "\nNames: " + this.names.toString() + "\nValues: " + this.values.toString();
+        else
+            return "ID: " + this.hashCode() + "\nParent: " + this.parent.hashCode() + "\nNames: " + this.names.toString() + "\nValues: " + this.values.toString();
     }
 }
