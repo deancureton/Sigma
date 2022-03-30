@@ -1,6 +1,7 @@
 package com.sigma.lexicalAnalysis;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Lexeme {
     // Instance Variables
@@ -58,12 +59,33 @@ public class Lexeme {
         return this.boolVal;
     }
 
+    public void setStringVal(String stringVal) {
+        this.stringVal = stringVal;
+    }
+
+    public void setNumVal(Double numVal) {
+        this.numVal = numVal;
+    }
+
+    public void setBoolVal(Boolean boolVal) {
+        this.boolVal = boolVal;
+    }
+
+    // Parse tree
     public void addChild(Lexeme child) {
         this.children.add(child);
     }
 
     public Lexeme getChild(int index) {
         return this.children.get(index);
+    }
+
+    // Equality
+    public boolean equals(Lexeme compare) {
+        return compare.getType() == this.getType()
+                && Objects.equals(compare.getStringVal(), this.getStringVal())
+                && Objects.equals(compare.getNumVal(), this.getNumVal())
+                && Objects.equals(compare.getBoolVal(), this.getBoolVal());
     }
 
     // toString
@@ -98,5 +120,6 @@ public class Lexeme {
 
     public void printTree() {
         printTree(this, 0);
+        System.out.print("\n");
     }
 }

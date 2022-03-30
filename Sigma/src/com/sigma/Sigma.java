@@ -1,7 +1,7 @@
 package com.sigma;
 
-import com.sigma.lexicalAnalysis.Lexeme;
-import com.sigma.lexicalAnalysis.Lexer;
+import com.sigma.environments.Environment;
+import com.sigma.lexicalAnalysis.*;
 import com.sigma.parsing.Parser;
 
 import java.io.IOException;
@@ -13,6 +13,7 @@ import java.util.ArrayList;
 public class Sigma {
     private static final ArrayList<String> syntaxErrorMessages = new ArrayList<>();
     private static final ArrayList<String> runtimeErrorMessages = new ArrayList<>();
+    private static final ArrayList<String> referenceErrorMessages = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         try {
@@ -34,7 +35,7 @@ public class Sigma {
         Parser parser = new Parser(lexer.lex());
         //lexer.printLexemes();
         Lexeme programParseTree = parser.program();
-        programParseTree.printTree();
+        //programParseTree.printTree();
     }
 
     private static String getSourceCodeFromFile(String path) throws IOException {
@@ -47,30 +48,40 @@ public class Sigma {
     }
 
     public static void syntaxError(String message, Lexeme lexeme) {
-        syntaxErrorMessages.add("Syntax error at " + lexeme + " : " + message);
+        syntaxErrorMessages.add("Syntax error at " + lexeme + ": " + message);
     }
 
     public static void runtimeError(String message, int lineNumber) {
-        runtimeErrorMessages.add("Runtime error at line " + lineNumber + ". " + message);
+        runtimeErrorMessages.add("Runtime error at line " + lineNumber + ": " + message);
         printErrors();
         System.exit(65);
     }
 
     public static void runtimeError(String message, Lexeme lexeme) {
-        runtimeErrorMessages.add("Runtime error at " + lexeme + ". " + message);
+        runtimeErrorMessages.add("Runtime error at " + lexeme + ": " + message);
         printErrors();
         System.exit(65);
+    }
+
+    public static void referenceError(String message, Lexeme lexeme) {
+        referenceErrorMessages.add("Reference error at " + lexeme + ": " + message);
+        printErrors();
+        System.exit(66);
     }
 
     private static void printErrors() {
         final String ANSI_YELLOW = "\u001B[33m";
         final String ANSI_RED_BACKGROUND = "\u001B[41m";
+        final String ANSI_RED = "\u001B[31m";
         final String ANSI_RESET = "\u001B[0m";
         for (String syntaxErrorMessage : syntaxErrorMessages) {
             System.out.println(ANSI_YELLOW + syntaxErrorMessage + ANSI_RESET);
         }
         for (String runtimeErrorMessage : runtimeErrorMessages) {
             System.out.println(ANSI_RED_BACKGROUND + runtimeErrorMessage + ANSI_RESET);
+        }
+        for (String referenceErrorMessage : referenceErrorMessages) {
+            System.out.println(ANSI_RED + referenceErrorMessage + ANSI_RESET);
         }
     }
 }
