@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
 public class Parser {
-    private static final boolean printDebugMessages = false;
+    private static final boolean printDebugMessages = true;
     private final ArrayList<Lexeme> lexemes;
     private Lexeme currentLexeme;
     private int nextLexemeIndex;
@@ -303,7 +303,7 @@ public class Parser {
         else if (check(NUMBER)) return consume(NUMBER);
         else if (check(IDENTIFIER)) return consume(IDENTIFIER);
         else if (check(STRING)) return consume(STRING);
-        else if (booleanPending()) return bool();
+        else if (check(BOOLEAN)) return consume(BOOLEAN);
         else if (arrayPending()) return array();
         else if (parenthesizedExpressionPending()) return parenthesizedExpression();
         else error("Expected primary.");
@@ -466,7 +466,7 @@ public class Parser {
         log("cases");
         Lexeme changeCases = new Lexeme(CHANGE_CASES, currentLexeme.getLineNumber());
         changeCases.addChild(changeCase());
-        if (changeCasePending()) {
+        while (changeCasePending()) {
             changeCases.addChild(changeCase());
         }
         return changeCases;
@@ -493,13 +493,6 @@ public class Parser {
         else if (check(CARET_ASSIGNMENT)) return consume(CARET_ASSIGNMENT);
         else if (check(PERCENT_ASSIGNMENT)) return consume(PERCENT_ASSIGNMENT);
         else error("Expected assignment operator.");
-        return null;
-    }
-
-    private Lexeme bool() {
-        log("boolean");
-        if (check(BOOLEAN)) return consume(BOOLEAN);
-        else error("Expected boolean.");
         return null;
     }
 
@@ -645,11 +638,11 @@ public class Parser {
     }
 
     private boolean unaryExprPending() {
-        return primaryPending() || check(EXCLAMATION) || check(NOT_KEYWORD) || check(MINUS);
+        return primaryPending() || check(EXCLAMATION) || check(NOT_KEYWORD) || check(MINUS) || check(INCREMENT) || check(DECREMENT);
     }
 
     private boolean primaryPending() {
-        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || booleanPending() || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
+        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
     }
 
     private boolean parenthesizedExpressionPending() {
@@ -694,10 +687,6 @@ public class Parser {
                 || checkNext(DOUBLE_DIVIDE_ASSIGNMENT)
                 || checkNext(CARET_ASSIGNMENT)
                 || checkNext(PERCENT_ASSIGNMENT);
-    }
-
-    private boolean booleanPending() {
-        return check(BOOLEAN);
     }
 
     private boolean arrayPending() {

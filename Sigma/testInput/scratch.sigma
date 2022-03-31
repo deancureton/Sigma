@@ -47,4 +47,8 @@ change {identifier} »
     case {2} »
         \code
     «
+    case {true} »
+    «
+    case {fals} »
+    «
 «

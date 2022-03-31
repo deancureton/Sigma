@@ -3,8 +3,6 @@ package com.sigma.environments;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
-import java.util.Arrays;
-
 public class EnvironmentTest {
     public static void main(String[] args) {
         Environment global = new Environment();
@@ -23,7 +21,8 @@ public class EnvironmentTest {
         local1.add(b, bVal);
         local3.add(c, cVal);
         local2.add(d, dVal);
-        System.out.println(local1.lookup(a));
+        System.out.println(global.toString());
+        System.out.println(local1.toString());
         global.update(a, new Lexeme(TokenType.STRING, 1, "avalue2"));
         System.out.println(local3.lookup(a));
         System.out.println(local2.lookup(d));

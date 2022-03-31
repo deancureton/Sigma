@@ -33,9 +33,9 @@ public class Sigma {
         String sourceCode = getSourceCodeFromFile(path);
         Lexer lexer = new Lexer(sourceCode);
         Parser parser = new Parser(lexer.lex());
-        //lexer.printLexemes();
+        lexer.printLexemes();
         Lexeme programParseTree = parser.program();
-        //programParseTree.printTree();
+        programParseTree.printTree();
     }
 
     private static String getSourceCodeFromFile(String path) throws IOException {

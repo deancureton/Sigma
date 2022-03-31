@@ -61,10 +61,8 @@ sumExpr ::= productExpr [("+" | "-") sumExpr]
 productExpr ::= exponentExpr [("*" | "//" | "/" | "%") sumExpr]
 exponentExpr ::= unaryExpr ["^" exponentExpr]
 unaryExpr ::= ("!" | "not" | "-") unaryExpr | primary
-primary ::= functionCall | cast | NUMBER | IDENTIFIER | STRING | boolean | array | parenthesizedExpression
+primary ::= functionCall | cast | NUMBER | IDENTIFIER | STRING | BOOLEAN | array | parenthesizedExpression
 parenthesizedExpression ::= "{" expression "}"
-
-boolean ::= "true" | "false"
 
 array ::= "(" arrayElements ")"
 arrayElements ::= primary*

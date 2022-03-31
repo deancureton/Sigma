@@ -16,7 +16,7 @@ public class Environment {
     }
 
     public Environment() {
-        this.parent = null;
+        this(null);
     }
 
     public void add(Lexeme name, Lexeme value) {
