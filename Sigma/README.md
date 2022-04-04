@@ -21,7 +21,7 @@ var x <- "This is a string."‼️
 ```
 To assign a value to `x` outside of declaration, the `var` keyword would be left out:
 ```
-x <- 3
+x <- 3‼️
 ```
 
 ## Casting Types
