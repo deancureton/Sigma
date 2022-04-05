@@ -80,6 +80,10 @@ public class Lexeme {
         return this.children.get(index);
     }
 
+    public int getNumChildren() {
+        return this.children.size();
+    }
+
     // Equality
     public boolean equals(Lexeme compare) {
         return compare.getType() == this.getType()

@@ -37,7 +37,6 @@ public class Lexer {
         keywords.put("when", WHEN_KEYWORD);
         keywords.put("loop", LOOP_KEYWORD);
         keywords.put("of", OF_KEYWORD);
-        keywords.put("count", COUNT_KEYWORD);
         keywords.put("nothing", NOTHING_KEYWORD);
         keywords.put("and", AND_KEYWORD);
         keywords.put("or", OR_KEYWORD);
@@ -50,6 +49,7 @@ public class Lexer {
         keywords.put("if", IF_KEYWORD);
         keywords.put("change", CHANGE_KEYWORD);
         keywords.put("case", CASE_KEYWORD);
+        keywords.put("nocase", NOCASE_KEYWORD);
         keywords.put("butif", BUTIF_KEYWORD);
         keywords.put("but", BUT_KEYWORD);
         return keywords;
@@ -120,6 +120,12 @@ public class Lexer {
                 return null;
 
             // Strictly one character
+            case '=':
+                Sigma.syntaxError("Equals sign", lineNumber);
+                break;
+            case ',':
+                Sigma.syntaxError("Comma", lineNumber);
+                break;
             case '‼':
                 return new Lexeme(BANGBANG, lineNumber);
             case '{':
@@ -208,9 +214,6 @@ public class Lexer {
                 }
                 if (match('~')) return new Lexeme(NOT_APPROX, lineNumber);
                 return new Lexeme(EXCLAMATION, lineNumber);
-            case '=':
-                Sigma.syntaxError("Equals sign", lineNumber);
-                break;
 
             // Strings
             case '"':
@@ -277,6 +280,7 @@ public class Lexer {
     private Lexeme lexIdentifierOrKeyword() {
         while (isAlphaNumeric(peek())) advance();
         String text = source.substring(startOfCurrentLexeme, currentPosition);
+
         if (text.equals("true")) return new Lexeme(BOOLEAN, lineNumber, true);
         if (text.equals("fals")) return new Lexeme(BOOLEAN, lineNumber, false);
 

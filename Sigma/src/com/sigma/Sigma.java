@@ -1,6 +1,7 @@
 package com.sigma;
 
 import com.sigma.environments.Environment;
+import com.sigma.evaluation.Evaluator;
 import com.sigma.lexicalAnalysis.*;
 import com.sigma.parsing.Parser;
 
@@ -31,11 +32,20 @@ public class Sigma {
         if (!path.endsWith(".sigma")) path += ".sigma";
         System.out.println("Running " + path + "...");
         String sourceCode = getSourceCodeFromFile(path);
+
         Lexer lexer = new Lexer(sourceCode);
+
         Parser parser = new Parser(lexer.lex());
-        lexer.printLexemes();
+        //lexer.printLexemes();
         Lexeme programParseTree = parser.program();
-        programParseTree.printTree();
+        //programParseTree.printTree();
+
+        Environment global = new Environment();
+
+        Evaluator evaluator = new Evaluator();
+        System.out.println(evaluator.eval(programParseTree, global));
+
+        printErrors();
     }
 
     private static String getSourceCodeFromFile(String path) throws IOException {

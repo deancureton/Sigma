@@ -8,8 +8,12 @@ import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
+// TODO for evaluation:
+// TODO take (return), end (break), fall (continue), count (loop count)
+// TODO ¬ as tab and ˇ as newline in strings
+
 public class Parser {
-    private static final boolean printDebugMessages = true;
+    private static final boolean printDebugMessages = false;
     private final ArrayList<Lexeme> lexemes;
     private Lexeme currentLexeme;
     private int nextLexemeIndex;
@@ -304,6 +308,7 @@ public class Parser {
         else if (check(IDENTIFIER)) return consume(IDENTIFIER);
         else if (check(STRING)) return consume(STRING);
         else if (check(BOOLEAN)) return consume(BOOLEAN);
+        else if (check(NOTHING_KEYWORD)) return consume(NOTHING_KEYWORD);
         else if (arrayPending()) return array();
         else if (parenthesizedExpressionPending()) return parenthesizedExpression();
         else error("Expected primary.");
@@ -458,7 +463,6 @@ public class Parser {
         consume(DOUBLE_FORWARD);
         changeStatement.addChild(changeCases());
         consume(DOUBLE_BACKWARD);
-        consume(BANGBANG);
         return changeStatement;
     }
 
@@ -468,6 +472,9 @@ public class Parser {
         changeCases.addChild(changeCase());
         while (changeCasePending()) {
             changeCases.addChild(changeCase());
+        }
+        if (noCasePending()) {
+            changeCases.addChild(noCase());
         }
         return changeCases;
     }
@@ -481,6 +488,14 @@ public class Parser {
         consume(CLOSED_CURLY);
         changeCase.addChild(block());
         return changeCase;
+    }
+
+    private Lexeme noCase() {
+        log("nocase");
+        Lexeme noCase = new Lexeme(CHANGE_CASE, currentLexeme.getLineNumber());
+        consume(NOCASE_KEYWORD);
+        noCase.addChild(block());
+        return noCase;
     }
 
     private Lexeme operatorAssignment() { // TODO clean up
@@ -593,6 +608,10 @@ public class Parser {
         return check(CASE_KEYWORD);
     }
 
+    private boolean noCasePending() {
+        return check(NOCASE_KEYWORD);
+    }
+
     private boolean commentPending() {
         return check(COMMENT);
     }
@@ -642,7 +661,7 @@ public class Parser {
     }
 
     private boolean primaryPending() {
-        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
+        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || check(NOTHING_KEYWORD) || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
     }
 
     private boolean parenthesizedExpressionPending() {

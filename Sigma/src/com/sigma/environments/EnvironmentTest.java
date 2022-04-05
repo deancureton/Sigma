@@ -3,6 +3,8 @@ package com.sigma.environments;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
+import java.util.Objects;
+
 public class EnvironmentTest {
     public static void main(String[] args) {
         Environment global = new Environment();
