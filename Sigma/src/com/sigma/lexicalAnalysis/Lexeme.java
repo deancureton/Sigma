@@ -104,7 +104,11 @@ public class Lexeme {
         } else if (getNumVal() != null) {
             output += ": " + getNumVal();
         } else if (getBoolVal() != null) {
-            output += ": " + getBoolVal();
+            if (!getBoolVal()) {
+                output += ": fals";
+            } else {
+                output += ": " + getBoolVal();
+            }
         }
         return output;
     }

@@ -8,10 +8,6 @@ import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-// TODO for evaluation:
-// TODO take (return), end (break), fall (continue), count (loop count)
-// TODO ¬ as tab and ˇ as newline in strings
-
 public class Parser {
     private static final boolean printDebugMessages = false;
     private final ArrayList<Lexeme> lexemes;
