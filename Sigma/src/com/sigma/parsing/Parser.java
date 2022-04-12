@@ -96,10 +96,8 @@ public class Parser {
         consume(VAR_KEYWORD);
         Lexeme declaration = new Lexeme(VARIABLE_DECLARATION, currentLexeme.getLineNumber());
         declaration.addChild(consume(IDENTIFIER));
-        if (check(ASSIGN_OPERATOR)) {
-            consume(ASSIGN_OPERATOR);
-            declaration.addChild(expression());
-        }
+        consume(ASSIGN_OPERATOR);
+        declaration.addChild(expression());
         return declaration;
     }
 
@@ -107,11 +105,13 @@ public class Parser {
         log("assignment");
         Lexeme assignment = new Lexeme(ASSIGNMENT, currentLexeme.getLineNumber());
         if (check(INCREMENT)) {
-            assignment.addChild(consume(INCREMENT));
+            Lexeme op = consume(INCREMENT);
             assignment.addChild(consume(IDENTIFIER));
+            assignment.addChild(op);
         } else if (check(DECREMENT)) {
-            assignment.addChild(consume(DECREMENT));
+            Lexeme op = consume(DECREMENT);
             assignment.addChild(consume(IDENTIFIER));
+            assignment.addChild(op);
         } else if (check(IDENTIFIER)) {
             assignment.addChild(consume(IDENTIFIER));
             assignment.addChild(regularAssignment());
@@ -168,16 +168,15 @@ public class Parser {
 
     private Lexeme expression() {
         log("expression");
-        /*Lexeme expression = new Lexeme(EXPRESSION, currentLexeme.getLineNumber());
+        Lexeme expression = new Lexeme(EXPRESSION, currentLexeme.getLineNumber());
         expression.addChild(orExpr());
-        return expression;*/
-        return orExpr();
+        return expression;
     }
 
     private Lexeme orExpr() {
         log("orExpr");
         Lexeme xorExpr = xorExpr();
-        if (check(OR_KEYWORD) || check(NOR_KEYWORD) || check(IMPLIES_KEYWORD)) {
+        if (check(OR_KEYWORD) || check(NOR_KEYWORD)) {
             Lexeme orOperator = consume();
             orOperator.addChild(xorExpr);
             orOperator.addChild(orExpr());
@@ -498,8 +497,9 @@ public class Parser {
         log("operatorAssignment");
         if (check(PLUS_ASSIGNMENT)) return consume(PLUS_ASSIGNMENT);
         else if (check(MINUS_ASSIGNMENT)) return consume(MINUS_ASSIGNMENT);
-        else if (check(DIVIDE_ASSIGNMENT)) return consume(DIVIDE_ASSIGNMENT);
         else if (check(TIMES_ASSIGNMENT)) return consume(TIMES_ASSIGNMENT);
+        else if (check(TIMES_ASSIGNMENT)) return consume(TIMES_ASSIGNMENT);
+        else if (check(DIVIDE_ASSIGNMENT)) return consume(DIVIDE_ASSIGNMENT);
         else if (check(DOUBLE_DIVIDE_ASSIGNMENT)) return consume(DOUBLE_DIVIDE_ASSIGNMENT);
         else if (check(CARET_ASSIGNMENT)) return consume(CARET_ASSIGNMENT);
         else if (check(PERCENT_ASSIGNMENT)) return consume(PERCENT_ASSIGNMENT);
@@ -710,7 +710,7 @@ public class Parser {
 
     private boolean castPending() {
         return check(IDENTIFIER) && checkNext(PERIOD);
-    }
+    } // TODO make cast primary.type, not just identifier.type
 
     private boolean functionCallPending() {
         return check(IDENTIFIER) && checkNext(OPEN_CURLY);

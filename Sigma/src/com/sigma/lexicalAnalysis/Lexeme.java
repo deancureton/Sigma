@@ -1,5 +1,7 @@
 package com.sigma.lexicalAnalysis;
 
+import com.sigma.environments.Environment;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -13,6 +15,8 @@ public class Lexeme {
     private Boolean boolVal;
 
     private final ArrayList<Lexeme> children = new ArrayList<>();
+
+    private Environment definingEnvironment;
 
     // Constructors
     public Lexeme(TokenType type, int lineNumber) {
@@ -59,6 +63,10 @@ public class Lexeme {
         return this.boolVal;
     }
 
+    public Environment getDefiningEnvironment() {
+        return definingEnvironment;
+    }
+
     public void setStringVal(String stringVal) {
         this.stringVal = stringVal;
     }
@@ -69,6 +77,10 @@ public class Lexeme {
 
     public void setBoolVal(Boolean boolVal) {
         this.boolVal = boolVal;
+    }
+
+    public void setDefiningEnvironment(Environment definingEnvironment) {
+        this.definingEnvironment = definingEnvironment;
     }
 
     // Parse tree

@@ -45,7 +45,6 @@ public class Lexer {
         keywords.put("nor", NOR_KEYWORD);
         keywords.put("xor", XOR_KEYWORD);
         keywords.put("xnor", XNOR_KEYWORD);
-        keywords.put("implies", IMPLIES_KEYWORD);
         keywords.put("if", IF_KEYWORD);
         keywords.put("change", CHANGE_KEYWORD);
         keywords.put("case", CASE_KEYWORD);
