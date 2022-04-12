@@ -11,14 +11,12 @@ Other types of variables in Sigma include `str` for string (which also includes 
 
 ## Declaring, Assigning, and Initializing Variables
 
-Declaring a variable in Sigma is easy: begin with the keyword `var`, type the variable name, and end the line with the double exclamation point emoji (representing a semicolon in most other languages). For example, to declare the variable `x`, you would type:
-```
-var x‼️
-```
-To assign a value to `x` at declaration, use the arrow sign before typing the actual content of the variable:
+Declaring a variable in Sigma is easy:
 ```
 var x <- "This is a string."‼️
 ```
+Begin with the keyword `var`, type the variable name, use the `<-` arrow symbol, type the content of the variable, and end the line with the double exclamation point emoji (representing a semicolon in most other languages).
+
 To assign a value to `x` outside of declaration, the `var` keyword would be left out:
 ```
 x <- 3‼️
