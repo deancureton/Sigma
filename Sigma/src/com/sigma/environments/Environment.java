@@ -6,6 +6,9 @@ import com.sigma.lexicalAnalysis.*;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import static com.sigma.lexicalAnalysis.TokenType.*;
+
+
 public class Environment {
     Environment parent;
     ArrayList<Lexeme> names = new ArrayList<>();
@@ -39,6 +42,10 @@ public class Environment {
                 this.parent.update(name, value);
             }
         } else {
+            values.get(index).setBoolVal(null);
+            values.get(index).setNumVal(null);
+            values.get(index).setStringVal(null);
+            values.get(index).setType(value.getType());
             values.get(index).setBoolVal(value.getBoolVal());
             values.get(index).setNumVal(value.getNumVal());
             values.get(index).setStringVal(value.getStringVal());
@@ -75,6 +82,16 @@ public class Environment {
             }
         } else {
             return true;
+        }
+    }
+
+    public void extend(Lexeme param, Lexeme arg) {
+        if (arg.getNumChildren() != param.getNumChildren()) {
+            Sigma.runtimeError("Invalid number of function arguments", arg);
+            return;
+        }
+        for (int i = 0; i < param.getNumChildren(); i++) {
+            this.add(param.getChild(i), arg.getChild(i));
         }
     }
 

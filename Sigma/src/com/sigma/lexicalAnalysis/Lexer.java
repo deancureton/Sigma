@@ -149,6 +149,8 @@ public class Lexer {
                 return new Lexeme(LEQ, lineNumber);
             case '~':
                 return new Lexeme(APPROX, lineNumber);
+            case '•':
+                return new Lexeme(DOT, lineNumber);
 
             // Multiple characters
             case '+':
@@ -203,7 +205,6 @@ public class Lexer {
                 return lexComment();
             case '.':
                 if (match('\\')) Sigma.syntaxError("Misplaced comment symbol", lineNumber);
-                return new Lexeme(PERIOD, lineNumber);
             case '!':
                 if (match('?')) {
                     if (match('?')) {

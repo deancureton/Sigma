@@ -4,6 +4,7 @@ import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
+import java.sql.Array;
 import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
@@ -126,11 +127,6 @@ public class Parser {
         funcDef.addChild(consume(IDENTIFIER));
         consume(ASSIGN_OPERATOR);
         funcDef.addChild(functionArgs());
-        if (check(OPEN_SQUARE)) {
-            consume(OPEN_SQUARE);
-            funcDef.addChild(optionalFunctionArgs());
-            consume(CLOSED_SQUARE);
-        }
         funcDef.addChild(block());
         consume(BANGBANG);
         return funcDef;
@@ -153,10 +149,16 @@ public class Parser {
         consume(OPEN_CURLY);
         ifStatement.addChild(expression());
         consume(CLOSED_CURLY);
-        ifStatement.addChild(block());
-        if (butifStatementPending()) {
-            ifStatement.addChild(butifStatementList());
+
+        consume(DOUBLE_FORWARD);
+        if (statementPending()) {
+            ifStatement.addChild(statementList());
+        } else {
+            ifStatement.addChild(new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber()));
         }
+        consume(DOUBLE_BACKWARD);
+
+        ifStatement.addChild(butifStatementList());
         if (butStatementPending()) ifStatement.addChild(butStatement());
         return ifStatement;
     }
@@ -348,16 +350,6 @@ public class Parser {
         return functionArgs;
     }
 
-    private Lexeme optionalFunctionArgs() {
-        log("optionalFunctionArgs");
-        Lexeme optionalFunctionArgs = new Lexeme(OPTIONAL_FUNCTION_ARGS, currentLexeme.getLineNumber());
-        optionalFunctionArgs.addChild(consume(IDENTIFIER));
-        while (check(IDENTIFIER)) {
-            optionalFunctionArgs.addChild(consume(IDENTIFIER));
-        }
-        return optionalFunctionArgs;
-    }
-
     private Lexeme block() {
         log("block");
         Lexeme block = null;
@@ -392,7 +384,8 @@ public class Parser {
         consume(VAR_KEYWORD);
         foreachLoop.addChild(consume(IDENTIFIER));
         consume(OF_KEYWORD);
-        foreachLoop.addChild(consume(IDENTIFIER));
+        if (check(IDENTIFIER)) foreachLoop.addChild(consume(IDENTIFIER));
+        if (arrayPending()) foreachLoop.addChild(array());
         consume(CLOSED_CURLY);
         foreachLoop.addChild(block());
         return foreachLoop;
@@ -414,7 +407,7 @@ public class Parser {
         Lexeme loopLoop = new Lexeme(LOOP_LOOP, currentLexeme.getLineNumber());
         consume(LOOP_KEYWORD);
         consume(OPEN_CURLY);
-        loopLoop.addChild(consume(NUMBER));
+        loopLoop.addChild(expression());
         consume(CLOSED_CURLY);
         loopLoop.addChild(block());
         return loopLoop;
@@ -436,7 +429,15 @@ public class Parser {
         consume(OPEN_CURLY);
         butIfStatement.addChild(expression());
         consume(CLOSED_CURLY);
-        butIfStatement.addChild(block());
+
+        consume(DOUBLE_FORWARD);
+        if (statementPending()) {
+            butIfStatement.addChild(statementList());
+        } else {
+            butIfStatement.addChild(new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber()));
+        }
+        consume(DOUBLE_BACKWARD);
+
         return butIfStatement;
     }
 
@@ -444,7 +445,15 @@ public class Parser {
         log("butStatement");
         Lexeme butStatement = new Lexeme(BUT_STATEMENT, currentLexeme.getLineNumber());
         consume(BUT_KEYWORD);
-        butStatement.addChild(block());
+
+        consume(DOUBLE_FORWARD);
+        if (statementPending()) {
+            butStatement.addChild(statementList());
+        } else {
+            butStatement.addChild(new Lexeme(STATEMENT_LIST, currentLexeme.getLineNumber()));
+        }
+        consume(DOUBLE_BACKWARD);
+
         return butStatement;
     }
 
@@ -493,7 +502,7 @@ public class Parser {
         return noCase;
     }
 
-    private Lexeme operatorAssignment() { // TODO clean up
+    private Lexeme operatorAssignment() {
         log("operatorAssignment");
         if (check(PLUS_ASSIGNMENT)) return consume(PLUS_ASSIGNMENT);
         else if (check(MINUS_ASSIGNMENT)) return consume(MINUS_ASSIGNMENT);
@@ -510,17 +519,33 @@ public class Parser {
     private Lexeme array() {
         log("array");
         consume(OPEN_PAREN);
-        Lexeme arrayElements = arrayElements();
+        ArrayList<Lexeme> arrayList = new ArrayList<>();
+        while (primaryPending()) {
+            arrayList.add(primary());
+        }
         consume(CLOSED_PAREN);
-        return arrayElements;
+        return new Lexeme(ARRAY, currentLexeme.getLineNumber(), arrayList);
     }
 
     private Lexeme cast() {
         log("cast");
         Lexeme cast = new Lexeme(CAST, currentLexeme.getLineNumber());
-        cast.addChild(consume(IDENTIFIER));
-        consume(PERIOD);
         cast.addChild(type());
+        consume(DOT);
+        if (check(NUMBER)) {
+            cast.addChild(consume(NUMBER));
+        } else if (check(IDENTIFIER)) {
+            cast.addChild(consume(IDENTIFIER));
+        } else if (check(STRING)) {
+            cast.addChild(consume(STRING));
+        } else if (check(BOOLEAN)) {
+            cast.addChild(consume(BOOLEAN));
+        } else if (arrayPending()) {
+            cast.addChild(array());
+        } else {
+            error("Unexpected type casting.");
+            return null;
+        }
         return cast;
     }
 
@@ -532,15 +557,6 @@ public class Parser {
         functionCall.addChild(callArguments());
         consume(CLOSED_CURLY);
         return functionCall;
-    }
-
-    private Lexeme arrayElements() {
-        log("arrayElements");
-        Lexeme arrayElements = new Lexeme(ARRAY_ELEMENTS, currentLexeme.getLineNumber());
-        while (primaryPending()) {
-            arrayElements.addChild(primary());
-        }
-        return arrayElements;
     }
 
     private Lexeme callArguments() {
@@ -708,9 +724,17 @@ public class Parser {
         return check(OPEN_PAREN);
     }
 
+    private boolean arrayPendingNext() {
+        return checkNext(OPEN_PAREN);
+    }
+
     private boolean castPending() {
-        return check(IDENTIFIER) && checkNext(PERIOD);
-    } // TODO make cast primary.type, not just identifier.type
+        return typePending() && checkNext(DOT);
+    }
+
+    private boolean typePending() {
+        return check(STR_KEYWORD) || check(NUM_KEYWORD) || check(TF_KEYWORD) || check(ARR_KEYWORD);
+    }
 
     private boolean functionCallPending() {
         return check(IDENTIFIER) && checkNext(OPEN_CURLY);

@@ -2,17 +2,19 @@ package com.sigma.lexicalAnalysis;
 
 import com.sigma.environments.Environment;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Objects;
 
 public class Lexeme {
     // Instance Variables
-    private final TokenType type;
+    private TokenType type;
     private final Integer lineNumber;
 
     private String stringVal;
     private Double numVal; // Sigma only supports a single real number type
     private Boolean boolVal;
+    public ArrayList<Lexeme> arrayVal;
 
     private final ArrayList<Lexeme> children = new ArrayList<>();
 
@@ -42,6 +44,12 @@ public class Lexeme {
         this.boolVal = boolVal;
     }
 
+    public Lexeme(TokenType type, int lineNumber, ArrayList<Lexeme> arrayVal) {
+        this.type = type;
+        this.lineNumber = lineNumber;
+        this.arrayVal = arrayVal;
+    }
+
     // Getters
     public TokenType getType() {
         return this.type;
@@ -65,6 +73,10 @@ public class Lexeme {
 
     public Environment getDefiningEnvironment() {
         return definingEnvironment;
+    }
+
+    public void setType(TokenType type) {
+        this.type = type;
     }
 
     public void setStringVal(String stringVal) {
@@ -98,10 +110,16 @@ public class Lexeme {
 
     // Equality
     public boolean equals(Lexeme compare) {
-        return compare.getType() == this.getType()
-                && Objects.equals(compare.getStringVal(), this.getStringVal())
-                && Objects.equals(compare.getNumVal(), this.getNumVal())
-                && Objects.equals(compare.getBoolVal(), this.getBoolVal());
+        boolean result = true;
+        if (compare.getType() != this.getType()) result = false;
+        if (!Objects.equals(compare.getStringVal(), this.getStringVal())) result = false;
+        if (!Objects.equals(compare.getNumVal(), this.getNumVal())) result = false;
+        if (!Objects.equals(compare.getBoolVal(), this.getBoolVal())) result = false;
+        if (this.arrayVal != null) {
+            if (!(this.arrayVal.containsAll(compare.arrayVal) && compare.arrayVal.containsAll(this.arrayVal)))
+                result = false;
+        }
+        return result;
     }
 
     // toString
@@ -121,6 +139,8 @@ public class Lexeme {
             } else {
                 output += ": " + getBoolVal();
             }
+        } else if (arrayVal != null) {
+            output += ": " + arrayVal.toString();
         }
         return output;
     }

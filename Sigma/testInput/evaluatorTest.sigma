@@ -1,1 +1,84 @@
-2+3‼
+\.
+var x <- 0‼
+for {var i <- 0‼ i < 3‼ ++i} »
+    i <- 3‼
+    ++x‼
+«
+x‼
+when {x ?? 0} »
+    \code
+«
+var x <- 0‼
+loop {"abc"} »
+    x <- count‼
+«
+\2 > (1 2)‼
+var identifier <- 5‼
+var x <- 0‼
+change {identifier} »
+    case {3} »
+        x <- "1"‼
+    «
+    case {4} »
+        x <- "2"‼
+    «
+    nocase »
+        x <- "3"‼
+    «
+«
+x‼
+var array <- (1 10 "hi")‼
+var x <- 0‼
+foreach {var i of array} »
+    x +<- i‼
+«
+x‼
+var x <- 1‼
+when {x < 78} »
+    x *<- 2‼
+«
+x‼
+var x <- 0‼
+var lol <- 0‼
+if {true} »
+    var yeah <- 3‼
+    x <- 3‼
+« butif {1 - 1} »
+    x <- 4‼
+« butif {0} »
+    x <- 5‼
+« butif {!1} »
+    x <- 6‼
+« butif {{{{0 * 3}}}} »
+    x <- 7‼
+« butif {++lol} »
+    x <- 9‼
+« but »
+    x <- 10‼
+«
+yeah‼
+func function <- num1 num2 num3 »
+    num1+num2+num3‼
+«‼
+function {1 2 nothing}‼.\
+var identifier <- 100‼
+var primary <- 2‼
+var testvar <- 0‼
+change {identifier} »
+    case {primary} »
+        testvar <- 1‼
+    «
+    case {2} »
+        testvar <- 2‼
+    «
+    case {true} »
+        testvar <- 3‼
+    «
+    case {fals} »
+        testvar <- 4‼
+    «
+    nocase »
+        testvar <- 5‼
+    «
+«
+testvar‼
