@@ -60,8 +60,8 @@ yeah‼
 func function <- num1 num2 num3 »
     num1+num2+num3‼
 «‼
-function {1 2 nothing}‼.\
-var identifier <- 100‼
+function {1 2 nothing}‼
+var identifier <- fals‼
 var primary <- 2‼
 var testvar <- 0‼
 change {identifier} »
@@ -77,8 +77,26 @@ change {identifier} »
     case {fals} »
         testvar <- 4‼
     «
-    nocase »
-        testvar <- 5‼
+«
+testvar‼
+primary‼
+identifier‼
+"lsdaf¬h¬¬giuˇowrhglkfjd"‼.\
+var identifier <- fals‼
+var primary <- 2‼
+var testvar <- 0‼
+change {identifier} »
+    case {primary} »
+        testvar <- 1‼
+    «
+    case {2} »
+        testvar <- 2‼
+    «
+    case {true} »
+        testvar <- 3‼
+    «
+    case {fals} »
+        testvar <- 4‼
     «
 «
 testvar‼

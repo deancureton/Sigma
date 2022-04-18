@@ -4,10 +4,6 @@ import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.*;
 
 import java.util.ArrayList;
-import java.util.Objects;
-
-import static com.sigma.lexicalAnalysis.TokenType.*;
-
 
 public class Environment {
     Environment parent;

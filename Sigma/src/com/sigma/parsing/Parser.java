@@ -4,7 +4,6 @@ import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
-import java.sql.Array;
 import java.util.ArrayList;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
@@ -479,6 +478,8 @@ public class Parser {
         }
         if (noCasePending()) {
             changeCases.addChild(noCase());
+        } else {
+            changeCases.addChild(new Lexeme(CHANGE_CASE, currentLexeme.getLineNumber()));
         }
         return changeCases;
     }
@@ -722,10 +723,6 @@ public class Parser {
 
     private boolean arrayPending() {
         return check(OPEN_PAREN);
-    }
-
-    private boolean arrayPendingNext() {
-        return checkNext(OPEN_PAREN);
     }
 
     private boolean castPending() {

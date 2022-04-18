@@ -12,13 +12,19 @@ import java.util.Collections;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-// TODO how will there be multiple outputs if only one lexeme is returned
-// TODO take (return), end (break), fall (continue), count (loop count)
-// TODO ¬ as tab and ˇ as newline in strings
-// TODO return multiple things at once
+// TODO take (return), end (break), fall (continue), length, array get/set, other built ins
+// TODO fix function arguments? comma separated?
 
 public class Evaluator {
     private static final boolean printDebugMessages = false;
+
+    private static final ArrayList<Lexeme> output = new ArrayList<>();
+
+    public void print() {
+        for (Lexeme lexeme : output) {
+            if (lexeme != null) System.out.println(lexeme);
+        }
+    }
 
     public Lexeme eval(Lexeme tree, Environment environment) {
         if (tree == null) return null;
@@ -55,7 +61,8 @@ public class Evaluator {
             case AND_KEYWORD, OR_KEYWORD,
                     NAND_KEYWORD, NOR_KEYWORD, XOR_KEYWORD, XNOR_KEYWORD -> evalBooleanBinaryOperator(tree, environment);
 
-            case NUMBER, STRING, BOOLEAN, ARRAY, NOTHING_KEYWORD, COMMENT -> tree;
+            case NUMBER, STRING, BOOLEAN, ARRAY, NOTHING_KEYWORD -> tree;
+            case COMMENT -> null;
             case IDENTIFIER -> environment.lookup(tree);
             case CAST -> evalCast(tree, environment);
 
@@ -65,22 +72,21 @@ public class Evaluator {
 
     private Lexeme evalStatementList(Lexeme tree, Environment environment) {
         log("evalStatementList");
-        Lexeme result = null;
         for (int i = 0; i < tree.getNumChildren(); i++) {
-            result = eval(tree.getChild(i), environment);
+            output.add(eval(tree.getChild(i), environment));
         }
-        return result;
+        return null;
     }
 
     private Lexeme evalVariableDeclaration(Lexeme tree, Environment environment) {
         environment.add(tree.getChild(0), eval(tree.getChild(1), environment));
-        return tree.getChild(1);
+        return null;
     }
 
     private Lexeme evalFunctionDefinition(Lexeme tree, Environment environment) {
         tree.setDefiningEnvironment(environment);
         environment.add(tree.getChild(0), tree);
-        return tree.getChild(0);
+        return null;
     }
 
     private Lexeme evalFunctionCall(Lexeme tree, Environment environment) {
@@ -116,7 +122,6 @@ public class Evaluator {
                 plus.addChild(one);
                 Lexeme result = evalPlus(plus, environment);
                 environment.update(id, result);
-                return result;
             }
             case DECREMENT -> {
                 Lexeme minus = new Lexeme(MINUS, tree.getLineNumber());
@@ -124,7 +129,6 @@ public class Evaluator {
                 minus.addChild(one);
                 Lexeme result = evalMinus(minus, environment);
                 environment.update(id, result);
-                return result;
             }
             case REGULAR_ASSIGNMENT -> {
                 return evalRegularAssignment(tree, environment);
@@ -134,6 +138,7 @@ public class Evaluator {
                 return null;
             }
         }
+        return null;
     }
 
     private Lexeme evalRegularAssignment(Lexeme tree, Environment environment) {
@@ -144,7 +149,6 @@ public class Evaluator {
             case ASSIGN_OPERATOR -> {
                 Lexeme result = eval(exp, environment);
                 environment.update(id, result);
-                return result;
             }
             case PLUS_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(PLUS, tree.getLineNumber());
@@ -152,7 +156,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalPlus(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case MINUS_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(MINUS, tree.getLineNumber());
@@ -160,7 +163,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalMinus(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case TIMES_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(TIMES, tree.getLineNumber());
@@ -168,7 +170,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalTimes(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case DIVIDE_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(DIVIDE, tree.getLineNumber());
@@ -176,7 +177,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalDivide(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case DOUBLE_DIVIDE_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(DOUBLE_DIVIDE, tree.getLineNumber());
@@ -184,7 +184,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalDoubleDivide(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case CARET_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(CARET, tree.getLineNumber());
@@ -192,7 +191,6 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalCaret(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             case PERCENT_ASSIGNMENT -> {
                 Lexeme newTree = new Lexeme(PERCENT, tree.getLineNumber());
@@ -200,13 +198,13 @@ public class Evaluator {
                 newTree.addChild(exp);
                 Lexeme result = evalPercent(newTree, environment);
                 environment.update(id, result);
-                return result;
             }
             default -> {
                 error("Problem with assignment operator", tree);
                 return null;
             }
         }
+        return null;
     }
 
     private Lexeme evalIfStatement(Lexeme tree, Environment environment) {
@@ -232,17 +230,30 @@ public class Evaluator {
     }
 
     private Lexeme evalChangeStatement(Lexeme tree, Environment environment) {
+        if (tree.getChild(0) == null) {
+            error("Missing identifier", tree);
+            return null;
+        }
         Lexeme value = environment.lookup(tree.getChild(0));
         boolean caught = false;
         for (int i = 0; i < tree.getChild(1).getNumChildren() - 1; i++) {
             Lexeme op = new Lexeme(QUESTION, tree.getLineNumber());
             op.addChild(value);
-            op.addChild(eval(tree.getChild(1).getChild(i).getChild(0), environment));
-            if (isTruthy(evalBinaryComparator(op, environment))) {
-                Environment caseEnvironment = new Environment(environment);
-                eval(tree.getChild(1).getChild(i).getChild(1), caseEnvironment);
-                caught = true;
-                break;
+            if (eval(tree.getChild(1).getChild(i).getChild(0), environment) == null) {
+                error("Missing expression", tree.getChild(1).getChild(i));
+                return null;
+            } else {
+                op.addChild(eval(tree.getChild(1).getChild(i).getChild(0), environment));
+                Lexeme evaluated = evalBinaryComparator(op, environment);
+                if (evaluated == null) {
+                    error("Error calculating change statement", tree.getChild(1).getChild(i).getChild(0));
+                    return null;
+                } else if (isTruthy(evaluated)) {
+                    Environment caseEnvironment = new Environment(environment);
+                    eval(tree.getChild(1).getChild(i).getChild(1), caseEnvironment);
+                    caught = true;
+                    break;
+                }
             }
         }
         if (!caught) {
@@ -255,9 +266,12 @@ public class Evaluator {
     private Lexeme evalForLoop(Lexeme tree, Environment environment) {
         Environment forEnvironment = new Environment(environment);
         forEnvironment.add(tree.getChild(0).getChild(0), eval(tree.getChild(0).getChild(1), forEnvironment));
+        Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
+        forEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
         while (isTruthy(eval(tree.getChild(1), forEnvironment))) {
             Environment forBody = new Environment(forEnvironment);
             eval(tree.getChild(3), forBody);
+            forEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), forEnvironment.lookup(count).getNumVal() + 1));
             eval(tree.getChild(2), forEnvironment);
         }
         return null;
@@ -266,31 +280,42 @@ public class Evaluator {
     private Lexeme evalForeachLoop(Lexeme tree, Environment environment) {
         ArrayList<Lexeme> foreachArray;
         foreachArray = eval(tree.getChild(1), environment).arrayVal;
+        Environment foreachEnvironment = new Environment(environment);
+        Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
+        foreachEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
         for (Lexeme lexeme : foreachArray) {
-            Environment foreachEnvironment = new Environment(environment);
-            foreachEnvironment.add(tree.getChild(0), lexeme);
-            eval(tree.getChild(2), foreachEnvironment);
+            Environment foreachBody = new Environment(foreachEnvironment);
+            foreachBody.add(tree.getChild(0), lexeme);
+            eval(tree.getChild(2), foreachBody);
+            foreachEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), foreachEnvironment.lookup(count).getNumVal() + 1));
         }
         return null;
     }
 
     private Lexeme evalWhenLoop(Lexeme tree, Environment environment) {
         Environment whenEnvironment = new Environment(environment);
+        Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
+        whenEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
         while (isTruthy(eval(tree.getChild(0), environment))) {
             Environment whenBody = new Environment(whenEnvironment);
             eval(tree.getChild(1), whenBody);
+            whenEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), whenEnvironment.lookup(count).getNumVal() + 1));
         }
         return null;
     }
 
     private Lexeme evalLoopLoop(Lexeme tree, Environment environment) {
+        if (eval(tree.getChild(0), environment) == null) {
+            error("Missing expression", tree.getChild(0));
+            return null;
+        }
         Environment loopEnvironment = new Environment(environment);
         Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
         loopEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
         Lexeme op = new Lexeme(LESS, tree.getLineNumber());
         op.addChild(loopEnvironment.lookup(count));
         op.addChild(tree.getChild(0));
-        while (isTruthy(evalBinaryComparator(op, loopEnvironment))) {
+        while (evalBinaryComparator(op, loopEnvironment) != null && isTruthy(evalBinaryComparator(op, loopEnvironment))) {
             eval(tree.getChild(1), loopEnvironment);
             loopEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), loopEnvironment.lookup(count).getNumVal() + 1));
         }
@@ -1300,8 +1325,11 @@ public class Evaluator {
                             Lexeme cast = new Lexeme(CAST, tree.getLineNumber());
                             cast.addChild(new Lexeme(STR_KEYWORD, tree.getLineNumber()));
                             cast.addChild(lexeme);
-                            temp.append(evalCast(cast, environment).getStringVal());
-                            temp.append(" ");
+                            Lexeme castedString = evalCast(cast, environment);
+                            if (castedString != null) {
+                                temp.append(castedString.getStringVal());
+                                temp.append(" ");
+                            }
                         }
                         if (temp.length() > 1) temp = new StringBuilder(temp.substring(0, temp.length() - 1));
                         temp.append(")");

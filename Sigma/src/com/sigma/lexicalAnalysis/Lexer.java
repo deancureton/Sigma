@@ -261,18 +261,29 @@ public class Lexer {
     }
 
     private Lexeme lexString() {
+        StringBuilder target = new StringBuilder();
         while (true) {
             switch (peek()) {
                 case '\0' -> {
                     Sigma.syntaxError("Malformed string (not closed properly)", lineNumber);
                     return null;
                 }
-                case '"' -> {
-                    String target = source.substring(startOfCurrentLexeme + 1, currentPosition);
+                case '¬' -> {
+                    target.append('\t');
                     advance();
-                    return new Lexeme(STRING, lineNumber, target);
                 }
-                default -> advance();
+                case 'ˇ' -> {
+                    target.append('\n');
+                    advance();
+                }
+                case '"' -> {
+                    advance();
+                    return new Lexeme(STRING, lineNumber, String.valueOf(target));
+                }
+                default -> {
+                    target.append(peek());
+                    advance();
+                }
             }
         }
     }
