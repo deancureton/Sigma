@@ -5,35 +5,54 @@ import com.sigma.environments.Environment;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
-import java.sql.Array;
+import java.util.Random;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-// TODO take (return), end (break), fall (continue), length, array get/set, other built ins
-// TODO fix function arguments? comma separated?
+// TODO take (return), end (break), fall (continue)
+// TODO add function definition as primitive type in all operations
 
 public class Evaluator {
     private static final boolean printDebugMessages = false;
 
-    private static final ArrayList<Lexeme> output = new ArrayList<>();
+    /*private static final ArrayList<Lexeme> output = new ArrayList<>();
 
     public void print() {
         for (Lexeme lexeme : output) {
             if (lexeme != null) System.out.println(lexeme);
         }
-    }
+    }*/
 
     public Lexeme eval(Lexeme tree, Environment environment) {
+        log("eval");
         if (tree == null) return null;
 
         return switch (tree.getType()) {
             case PROGRAM -> eval(tree.getChild(0), environment);
             case STATEMENT_LIST -> evalStatementList(tree, environment);
+            default -> evalStatement(tree, environment);
+        };
+    }
 
-            case EXPRESSION -> eval(tree.getChild(0), environment);
+    private Lexeme evalStatementList(Lexeme tree, Environment environment) {
+        log("evalStatementList");
+        Lexeme result = null;
+        for (int i = 0; i < tree.getNumChildren(); i++) {
+            result = evalStatement(tree.getChild(i), environment);
+        }
+        return result;
+    }
+
+    public Lexeme evalStatement(Lexeme tree, Environment environment) {
+        //log("evalStatement");
+        if (tree == null) return null;
+
+        return switch (tree.getType()) {
+            case EXPRESSION -> evalStatement(tree.getChild(0), environment);
 
             case VARIABLE_DECLARATION -> evalVariableDeclaration(tree, environment);
             case FUNCTION_DEFINITION -> evalFunctionDefinition(tree, environment);
@@ -64,55 +83,428 @@ public class Evaluator {
             case NUMBER, STRING, BOOLEAN, ARRAY, NOTHING_KEYWORD -> tree;
             case COMMENT -> null;
             case IDENTIFIER -> environment.lookup(tree);
-            case CAST -> evalCast(tree, environment);
 
             default -> null;
         };
     }
 
-    private Lexeme evalStatementList(Lexeme tree, Environment environment) {
-        log("evalStatementList");
-        for (int i = 0; i < tree.getNumChildren(); i++) {
-            output.add(eval(tree.getChild(i), environment));
-        }
-        return null;
-    }
-
     private Lexeme evalVariableDeclaration(Lexeme tree, Environment environment) {
-        environment.add(tree.getChild(0), eval(tree.getChild(1), environment));
+        log("evalVariableDeclaration");
+        environment.add(tree.getChild(0), evalStatement(tree.getChild(1), environment));
         return null;
     }
 
     private Lexeme evalFunctionDefinition(Lexeme tree, Environment environment) {
+        log("evalFunctionDefinition");
         tree.setDefiningEnvironment(environment);
-        environment.add(tree.getChild(0), tree);
+        switch (tree.getChild(0).getStringVal()) {
+            case "log", "random", "abs", "floor", "ceil", "round", "sqrt", "min", "max", "lowercase", "uppercase", "getChar", "substring", "length", "get", "set", "add", "remove", "contains", "take", "end", "fall", "str", "num", "tf", "arr" -> {
+                Sigma.runtimeError("Cannot override built-in function " + tree.getChild(0).getStringVal(), tree);
+            }
+            default -> {
+                environment.add(tree.getChild(0), tree);
+            }
+        }
         return null;
     }
 
     private Lexeme evalFunctionCall(Lexeme tree, Environment environment) {
+        log("evalFunctionCall");
         Lexeme functionName = tree.getChild(0);
-        Lexeme closure = environment.lookup(functionName);
-        if (closure.getType() != FUNCTION_DEFINITION)
-            error("Attempt to call " + closure.getType() + " as function failed", functionName);
-        Environment definingEnv = closure.getDefiningEnvironment();
-        Environment callEnv = new Environment(definingEnv);
-        Lexeme paramList = closure.getChild(1);
-        Lexeme argList = tree.getChild(1);
-        Lexeme evalArgList = evalArgumentList(argList, environment);
-        callEnv.extend(paramList, evalArgList);
-        Lexeme functionBody = closure.getChild(2);
-        return eval(functionBody, callEnv);
+        switch (functionName.getStringVal()) {
+            case "log" -> {
+                for (int i = 0; i < tree.getChild(1).getNumChildren(); i++) {
+                    System.out.println(evalStatement(tree.getChild(1).getChild(i), environment));
+                }
+                return null;
+            }
+            case "random" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != NUMBER || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("random takes in two number arguments", tree.getChild(1));
+                    return null;
+                }
+                Random rand = new Random();
+                double random = rand.nextDouble();
+                random = random * (arg2.getNumVal() - arg1.getNumVal()) + arg1.getNumVal();
+                return new Lexeme(NUMBER, tree.getLineNumber(), random);
+            }
+            case "abs" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg.getType() != NUMBER) {
+                    Sigma.runtimeError("abs takes in one number argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.abs(arg.getNumVal()));
+            }
+            case "floor" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg.getType() != NUMBER) {
+                    Sigma.runtimeError("floor takes in one number argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.floor(arg.getNumVal()));
+            }
+            case "ceil" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg.getType() != NUMBER) {
+                    Sigma.runtimeError("ceil takes in one number argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.ceil(arg.getNumVal()));
+            }
+            case "round" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg.getType() != NUMBER) {
+                    Sigma.runtimeError("round takes in one number argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.round(arg.getNumVal()));
+            }
+            case "sqrt" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg.getType() != NUMBER) {
+                    Sigma.runtimeError("sqrt takes in one number argument", tree.getChild(1));
+                    return null;
+                }
+                if (arg.getNumVal() < 0) {
+                    Sigma.runtimeError("Cannot take square root of negative number", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.sqrt(arg.getNumVal()));
+            }
+            case "min" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != NUMBER || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("min takes in two number arguments", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.min(arg1.getNumVal(), arg2.getNumVal()));
+            }
+            case "max" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != NUMBER || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("max takes in two number arguments", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), Math.max(arg1.getNumVal(), arg2.getNumVal()));
+            }
+            case "lowercase" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg1.getType() != STRING) {
+                    Sigma.runtimeError("lowercase takes in one string argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(STRING, tree.getLineNumber(), arg1.getStringVal().toLowerCase());
+            }
+            case "uppercase" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg1.getType() != STRING) {
+                    Sigma.runtimeError("uppercase takes in one string argument", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(STRING, tree.getLineNumber(), arg1.getStringVal().toUpperCase());
+            }
+            case "getChar" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != STRING || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("getChar takes in one string and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().charAt((int) Math.floor(arg2.getNumVal())));
+            }
+            case "substring" -> {
+                if (tree.getChild(1).getNumChildren() != 3) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                Lexeme arg3 = evalStatement(tree.getChild(1).getChild(2), environment);
+                if (arg1.getType() != STRING || arg2.getType() != NUMBER || arg3.getType() != NUMBER) {
+                    Sigma.runtimeError("substring takes in one string and two number arguments", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().substring((int) Math.floor(arg2.getNumVal()), (int) Math.floor(arg3.getNumVal())));
+            }
+            case "length" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                if (arg1.getType() == STRING) {
+                    return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().length());
+                } else if (arg1.getType() == ARRAY) {
+                    return new Lexeme(NUMBER, tree.getLineNumber(), arg1.arrayVal.size());
+                } else {
+                    Sigma.runtimeError("length takes in one string or array argument", tree.getChild(1));
+                    return null;
+                }
+            }
+            case "get" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != ARRAY || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("get takes in one array and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                int index = (int) Math.floor(arg2.getNumVal());
+                if (index < 0 || index >= arg1.arrayVal.size()) {
+                    Sigma.runtimeError("get index out of bounds", tree.getChild(1));
+                    return null;
+                }
+                return arg1.arrayVal.get((int) Math.floor(arg2.getNumVal()));
+            }
+            case "set" -> {
+                if (tree.getChild(1).getNumChildren() != 3) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                Lexeme arg3 = evalStatement(tree.getChild(1).getChild(2), environment);
+                if (arg1.getType() != ARRAY || arg3.getType() != NUMBER) {
+                    Sigma.runtimeError("add takes in one array, one anytype, and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                int index = (int) Math.floor(arg3.getNumVal());
+                if (index < 0 || index >= arg1.arrayVal.size()) {
+                    Sigma.runtimeError("set index out of bounds", tree.getChild(1));
+                    return null;
+                }
+                arg1.arrayVal.set(index, arg2);
+                return null;
+            }
+            case "add" -> {
+                if (tree.getChild(1).getNumChildren() != 3) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                Lexeme arg3 = evalStatement(tree.getChild(1).getChild(2), environment);
+                if (arg1.getType() != ARRAY || arg3.getType() != NUMBER) {
+                    Sigma.runtimeError("add takes in one array, one anytype, and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                int index = (int) Math.floor(arg3.getNumVal());
+                if (index < 0 || index > arg1.arrayVal.size()) {
+                    Sigma.runtimeError("add index out of bounds", tree.getChild(1));
+                    return null;
+                }
+                arg1.arrayVal.add(index, arg2);
+                return null;
+            }
+            case "remove" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != ARRAY || arg2.getType() != NUMBER) {
+                    Sigma.runtimeError("remove takes in one array and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                int index = (int) Math.floor(arg2.getNumVal());
+                if (index < 0 || index >= arg1.arrayVal.size()) {
+                    Sigma.runtimeError("remove index out of bounds", tree.getChild(1));
+                    return null;
+                }
+                arg1.arrayVal.remove(index);
+                return null;
+            }
+            case "contains" -> {
+                if (tree.getChild(1).getNumChildren() != 2) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
+                if (arg1.getType() != ARRAY) {
+                    Sigma.runtimeError("remove takes in one array and one number arguments", tree.getChild(1));
+                    return null;
+                }
+                for (Lexeme lexeme : arg1.arrayVal) {
+                    if (lexeme.equals(arg2)) {
+                        return new Lexeme(BOOLEAN, tree.getLineNumber(), true);
+                    }
+                }
+                return new Lexeme(BOOLEAN, tree.getLineNumber(), false);
+            }
+            case "num" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                switch (arg1.getType()) {
+                    case NUMBER:
+                        return arg1;
+                    case STRING:
+                        return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().length());
+                    case BOOLEAN:
+                        return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getBoolVal() ? 1 : 0);
+                    case ARRAY:
+                        return new Lexeme(NUMBER, tree.getLineNumber(), arg1.arrayVal.size());
+                    default:
+                        error("Could not perform cast", tree);
+                        return null;
+                }
+            }
+            case "str" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                switch (arg1.getType()) {
+                    case NUMBER:
+                        return new Lexeme(STRING, tree.getLineNumber(), arg1.getNumVal().toString());
+                    case STRING:
+                        return arg1;
+                    case BOOLEAN:
+                        return new Lexeme(STRING, tree.getLineNumber(), arg1.getBoolVal() ? "true" : "fals");
+                    case ARRAY:
+                        StringBuilder temp = new StringBuilder("(");
+                        for (Lexeme lexeme : arg1.arrayVal) {
+                            Lexeme str = new Lexeme(FUNCTION_CALL, tree.getLineNumber());
+                            str.addChild(new Lexeme(IDENTIFIER, tree.getLineNumber(), "str"));
+                            Lexeme arguments = new Lexeme(CALL_ARGUMENTS, tree.getLineNumber());
+                            arguments.addChild(lexeme);
+                            str.addChild(arguments);
+                            Lexeme castedString = evalFunctionCall(str, environment);
+                            if (castedString != null) {
+                                temp.append(castedString.getStringVal());
+                                temp.append(" ");
+                            }
+                        }
+                        if (temp.length() > 1) temp = new StringBuilder(temp.substring(0, temp.length() - 1));
+                        temp.append(")");
+                        return new Lexeme(STRING, tree.getLineNumber(), temp.toString());
+                    default:
+                        error("Could not perform cast", tree);
+                        return null;
+                }
+            }
+            case "tf" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                switch (arg1.getType()) {
+                    case NUMBER:
+                        return new Lexeme(BOOLEAN, tree.getLineNumber(), arg1.getNumVal() != 0);
+                    case STRING:
+                        return new Lexeme(BOOLEAN, tree.getLineNumber(), !arg1.getStringVal().equals(""));
+                    case BOOLEAN:
+                        return arg1;
+                    case ARRAY:
+                        return new Lexeme(BOOLEAN, tree.getLineNumber(), arg1.arrayVal.size() != 0);
+                    default:
+                        error("Could not perform cast", tree);
+                        return null;
+                }
+            }
+            case "arr" -> {
+                if (tree.getChild(1).getNumChildren() != 1) {
+                    Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
+                    return null;
+                }
+                Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
+                ArrayList<Lexeme> temp = new ArrayList<>();
+                switch (arg1.getType()) {
+                    case NUMBER, STRING, BOOLEAN:
+                        temp.add(arg1);
+                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
+                    case ARRAY:
+                        return arg1;
+                    default:
+                        error("Could not perform cast", tree);
+                        return null;
+                }
+            }
+            default -> {
+                Lexeme closure = environment.lookup(functionName);
+                if (closure.getType() != FUNCTION_DEFINITION)
+                    error("Attempt to call " + closure.getType() + " as function failed", functionName);
+                Environment definingEnv = closure.getDefiningEnvironment();
+                Environment callEnv = new Environment(definingEnv);
+                Lexeme paramList = closure.getChild(1);
+                Lexeme argList = tree.getChild(1);
+                Lexeme evalArgList = evalArgumentList(argList, environment);
+                callEnv.extend(paramList, evalArgList);
+                Lexeme functionBody = closure.getChild(2);
+                return evalStatementList(functionBody, callEnv);
+            }
+        }
     }
 
     private Lexeme evalArgumentList(Lexeme tree, Environment environment) {
+        log("evalArgumentList");
         Lexeme evaluated = new Lexeme(CALL_ARGUMENTS, tree.getLineNumber());
         for (int i = 0; i < tree.getNumChildren(); i++) {
-            evaluated.addChild(eval(tree.getChild(i), environment));
+            evaluated.addChild(evalStatement(tree.getChild(i), environment));
         }
         return evaluated;
     }
 
     private Lexeme evalAssignment(Lexeme tree, Environment environment) {
+        log("evalAssignment");
         Lexeme id = tree.getChild(0);
         Lexeme one = new Lexeme(NUMBER, tree.getLineNumber(), 1);
         switch (tree.getChild(1).getType()) {
@@ -142,12 +534,13 @@ public class Evaluator {
     }
 
     private Lexeme evalRegularAssignment(Lexeme tree, Environment environment) {
+        log("evalRegularAssignment");
         Lexeme id = tree.getChild(0);
         Lexeme op = tree.getChild(1).getChild(0);
         Lexeme exp = tree.getChild(1).getChild(1);
         switch (op.getType()) {
             case ASSIGN_OPERATOR -> {
-                Lexeme result = eval(exp, environment);
+                Lexeme result = evalStatement(exp, environment);
                 environment.update(id, result);
             }
             case PLUS_ASSIGNMENT -> {
@@ -208,28 +601,30 @@ public class Evaluator {
     }
 
     private Lexeme evalIfStatement(Lexeme tree, Environment environment) {
-        Lexeme ifExp = eval(tree.getChild(0), environment);
+        log("evalIfStatement");
+        Lexeme ifExp = evalStatement(tree.getChild(0), environment);
         if (isTruthy(ifExp)) {
             Environment ifEnv = new Environment(environment);
-            eval(tree.getChild(1), ifEnv);
+            evalStatementList(tree.getChild(1), ifEnv);
             return null;
         }
         for (int i = 0; i < tree.getChild(2).getNumChildren(); i++) {
-            Lexeme butIfExp = eval(tree.getChild(2).getChild(i).getChild(0), environment);
+            Lexeme butIfExp = evalStatement(tree.getChild(2).getChild(i).getChild(0), environment);
             if (isTruthy(butIfExp)) {
                 Environment butIfEnv = new Environment(environment);
-                eval(tree.getChild(2).getChild(i).getChild(1), butIfEnv);
+                evalStatementList(tree.getChild(2).getChild(i).getChild(1), butIfEnv);
                 return null;
             }
         }
         if (tree.getNumChildren() == 4) {
             Environment butEnv = new Environment(environment);
-            eval(tree.getChild(3).getChild(0), butEnv);
+            evalStatementList(tree.getChild(3).getChild(0), butEnv);
         }
         return null;
     }
 
     private Lexeme evalChangeStatement(Lexeme tree, Environment environment) {
+        log("evalChangeStatement");
         if (tree.getChild(0) == null) {
             error("Missing identifier", tree);
             return null;
@@ -239,18 +634,18 @@ public class Evaluator {
         for (int i = 0; i < tree.getChild(1).getNumChildren() - 1; i++) {
             Lexeme op = new Lexeme(QUESTION, tree.getLineNumber());
             op.addChild(value);
-            if (eval(tree.getChild(1).getChild(i).getChild(0), environment) == null) {
+            if (evalStatement(tree.getChild(1).getChild(i).getChild(0), environment) == null) {
                 error("Missing expression", tree.getChild(1).getChild(i));
                 return null;
             } else {
-                op.addChild(eval(tree.getChild(1).getChild(i).getChild(0), environment));
+                op.addChild(evalStatement(tree.getChild(1).getChild(i).getChild(0), environment));
                 Lexeme evaluated = evalBinaryComparator(op, environment);
                 if (evaluated == null) {
                     error("Error calculating change statement", tree.getChild(1).getChild(i).getChild(0));
                     return null;
                 } else if (isTruthy(evaluated)) {
                     Environment caseEnvironment = new Environment(environment);
-                    eval(tree.getChild(1).getChild(i).getChild(1), caseEnvironment);
+                    evalStatementList(tree.getChild(1).getChild(i).getChild(1), caseEnvironment);
                     caught = true;
                     break;
                 }
@@ -258,54 +653,58 @@ public class Evaluator {
         }
         if (!caught) {
             Environment caseEnvironment = new Environment(environment);
-            eval(tree.getChild(1).getChild(tree.getChild(1).getNumChildren() - 1).getChild(0), caseEnvironment);
+            evalStatementList(tree.getChild(1).getChild(tree.getChild(1).getNumChildren() - 1).getChild(0), caseEnvironment);
         }
         return null;
     }
 
     private Lexeme evalForLoop(Lexeme tree, Environment environment) {
+        log("evalForLoop");
         Environment forEnvironment = new Environment(environment);
-        forEnvironment.add(tree.getChild(0).getChild(0), eval(tree.getChild(0).getChild(1), forEnvironment));
+        forEnvironment.add(tree.getChild(0).getChild(0), evalStatement(tree.getChild(0).getChild(1), forEnvironment));
         Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
         forEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
-        while (isTruthy(eval(tree.getChild(1), forEnvironment))) {
+        while (isTruthy(evalStatement(tree.getChild(1), forEnvironment))) {
             Environment forBody = new Environment(forEnvironment);
-            eval(tree.getChild(3), forBody);
+            evalStatementList(tree.getChild(3), forBody);
             forEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), forEnvironment.lookup(count).getNumVal() + 1));
-            eval(tree.getChild(2), forEnvironment);
+            evalStatement(tree.getChild(2), forEnvironment);
         }
         return null;
     }
 
     private Lexeme evalForeachLoop(Lexeme tree, Environment environment) {
+        log("evalForeachLoop");
         ArrayList<Lexeme> foreachArray;
-        foreachArray = eval(tree.getChild(1), environment).arrayVal;
+        foreachArray = evalStatement(tree.getChild(1), environment).arrayVal;
         Environment foreachEnvironment = new Environment(environment);
         Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
         foreachEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
         for (Lexeme lexeme : foreachArray) {
             Environment foreachBody = new Environment(foreachEnvironment);
             foreachBody.add(tree.getChild(0), lexeme);
-            eval(tree.getChild(2), foreachBody);
+            evalStatementList(tree.getChild(2), foreachBody);
             foreachEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), foreachEnvironment.lookup(count).getNumVal() + 1));
         }
         return null;
     }
 
     private Lexeme evalWhenLoop(Lexeme tree, Environment environment) {
+        log("evalWhenLoop");
         Environment whenEnvironment = new Environment(environment);
         Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
         whenEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
-        while (isTruthy(eval(tree.getChild(0), environment))) {
+        while (isTruthy(evalStatement(tree.getChild(0), environment))) {
             Environment whenBody = new Environment(whenEnvironment);
-            eval(tree.getChild(1), whenBody);
+            evalStatementList(tree.getChild(1), whenBody);
             whenEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), whenEnvironment.lookup(count).getNumVal() + 1));
         }
         return null;
     }
 
     private Lexeme evalLoopLoop(Lexeme tree, Environment environment) {
-        if (eval(tree.getChild(0), environment) == null) {
+        log("evalLoopLoop");
+        if (evalStatement(tree.getChild(0), environment) == null) {
             error("Missing expression", tree.getChild(0));
             return null;
         }
@@ -316,14 +715,14 @@ public class Evaluator {
         op.addChild(loopEnvironment.lookup(count));
         op.addChild(tree.getChild(0));
         while (evalBinaryComparator(op, loopEnvironment) != null && isTruthy(evalBinaryComparator(op, loopEnvironment))) {
-            eval(tree.getChild(1), loopEnvironment);
+            evalStatementList(tree.getChild(1), loopEnvironment);
             loopEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), loopEnvironment.lookup(count).getNumVal() + 1));
         }
         return null;
     }
 
     private Lexeme evalSimpleBinaryOperator(Lexeme tree, Environment environment) {
-        log("evalBinaryOperator");
+        log("evalSimpleBinaryOperator");
         switch (tree.getType()) {
             case PLUS -> {
                 return evalPlus(tree, environment);
@@ -351,8 +750,9 @@ public class Evaluator {
     }
 
     private Lexeme evalBinaryComparator(Lexeme tree, Environment environment) {
-        Lexeme left = eval(tree.getChild(0), environment);
-        Lexeme right = eval(tree.getChild(1), environment);
+        log("evalBinaryComparator");
+        Lexeme left = evalStatement(tree.getChild(0), environment);
+        Lexeme right = evalStatement(tree.getChild(1), environment);
         TokenType lType = left.getType();
         TokenType rType = right.getType();
         int lLevel;
@@ -469,8 +869,9 @@ public class Evaluator {
     }
 
     private Lexeme evalBooleanBinaryOperator(Lexeme tree, Environment environment) {
-        Lexeme left = eval(tree.getChild(0), environment);
-        Lexeme right = eval(tree.getChild(1), environment);
+        log("evalBooleanBinaryOperator");
+        Lexeme left = evalStatement(tree.getChild(0), environment);
+        Lexeme right = evalStatement(tree.getChild(1), environment);
         boolean l = isTruthy(left);
         boolean r = isTruthy(right);
         boolean result;
@@ -499,6 +900,7 @@ public class Evaluator {
     }
 
     private Lexeme evalIncDec(Lexeme tree, Environment environment) {
+        log("evalIncDec");
         Lexeme value = tree.getChild(0);
         Lexeme one = new Lexeme(NUMBER, tree.getLineNumber(), 1);
         switch (tree.getType()) {
@@ -527,8 +929,8 @@ public class Evaluator {
 
     private Lexeme evalPlus(Lexeme tree, Environment environment) {
         log("evalPlus");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -612,7 +1014,7 @@ public class Evaluator {
     private Lexeme evalMinus(Lexeme tree, Environment environment) {
         log("evalMinus");
         if (tree.getNumChildren() == 1) {
-            Lexeme child = eval(tree.getChild(0), environment);
+            Lexeme child = evalStatement(tree.getChild(0), environment);
             TokenType type = child.getType();
             switch (type) {
                 case NUMBER:
@@ -632,8 +1034,8 @@ public class Evaluator {
                     return null;
             }
         } else if (tree.getNumChildren() == 2) {
-            Lexeme l = eval(tree.getChild(0), environment);
-            Lexeme r = eval(tree.getChild(1), environment);
+            Lexeme l = evalStatement(tree.getChild(0), environment);
+            Lexeme r = evalStatement(tree.getChild(1), environment);
             TokenType lType = l.getType();
             TokenType rType = r.getType();
 
@@ -724,7 +1126,8 @@ public class Evaluator {
     }
 
     private Lexeme evalNotOperator(Lexeme tree, Environment environment) {
-        Lexeme child = eval(tree.getChild(0), environment);
+        log("evalNotOperator");
+        Lexeme child = evalStatement(tree.getChild(0), environment);
         TokenType type = child.getType();
         switch (type) {
             case NUMBER:
@@ -745,8 +1148,8 @@ public class Evaluator {
 
     private Lexeme evalTimes(Lexeme tree, Environment environment) {
         log("evalTimes");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -850,8 +1253,8 @@ public class Evaluator {
 
     private Lexeme evalDivide(Lexeme tree, Environment environment) {
         log("evalDivide");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -946,8 +1349,8 @@ public class Evaluator {
 
     private Lexeme evalDoubleDivide(Lexeme tree, Environment environment) {
         log("evalDoubleDivide");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -1042,8 +1445,8 @@ public class Evaluator {
 
     private Lexeme evalCaret(Lexeme tree, Environment environment) {
         log("evalCaret");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -1158,8 +1561,8 @@ public class Evaluator {
 
     private Lexeme evalPercent(Lexeme tree, Environment environment) {
         log("evalPercent");
-        Lexeme l = eval(tree.getChild(0), environment);
-        Lexeme r = eval(tree.getChild(1), environment);
+        Lexeme l = evalStatement(tree.getChild(0), environment);
+        Lexeme r = evalStatement(tree.getChild(1), environment);
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
@@ -1259,94 +1662,6 @@ public class Evaluator {
                 }
             default:
                 error("Could not calculate modulus operation", tree);
-                return null;
-        }
-    }
-
-    private Lexeme evalCast(Lexeme tree, Environment environment) {
-        Lexeme value = eval(tree.getChild(1), environment);
-        Lexeme type = tree.getChild(0);
-        switch (value.getType()) {
-            case NUMBER:
-                switch (type.getType()) {
-                    case NUM_KEYWORD:
-                        return value;
-                    case STR_KEYWORD:
-                        return new Lexeme(STRING, tree.getLineNumber(), value.getNumVal().toString());
-                    case TF_KEYWORD:
-                        return new Lexeme(BOOLEAN, tree.getLineNumber(), value.getNumVal() != 0);
-                    case ARR_KEYWORD:
-                        ArrayList<Lexeme> temp = new ArrayList<>();
-                        temp.add(value);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
-                    default:
-                        error("Could not perform cast", tree);
-                        return null;
-                }
-            case STRING:
-                switch (type.getType()) {
-                    case NUM_KEYWORD:
-                        return new Lexeme(NUMBER, tree.getLineNumber(), value.getStringVal().length());
-                    case STR_KEYWORD:
-                        return value;
-                    case TF_KEYWORD:
-                        return new Lexeme(BOOLEAN, tree.getLineNumber(), !value.getStringVal().equals(""));
-                    case ARR_KEYWORD:
-                        ArrayList<Lexeme> temp = new ArrayList<>();
-                        temp.add(value);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
-                    default:
-                        error("Could not perform cast", tree);
-                        return null;
-                }
-            case BOOLEAN:
-                switch (type.getType()) {
-                    case NUM_KEYWORD:
-                        return new Lexeme(NUMBER, tree.getLineNumber(), value.getBoolVal() ? 1 : 0);
-                    case STR_KEYWORD:
-                        return new Lexeme(STRING, tree.getLineNumber(), value.getBoolVal() ? "true" : "fals");
-                    case TF_KEYWORD:
-                        return value;
-                    case ARR_KEYWORD:
-                        ArrayList<Lexeme> temp = new ArrayList<>();
-                        temp.add(value);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
-                    default:
-                        error("Could not perform cast", tree);
-                        return null;
-                }
-            case ARRAY:
-                switch (type.getType()) {
-                    case NUM_KEYWORD:
-                        return new Lexeme(NUMBER, tree.getLineNumber(), value.arrayVal.size());
-                    case STR_KEYWORD:
-                        StringBuilder temp = new StringBuilder("(");
-                        for (Lexeme lexeme : value.arrayVal) {
-                            Lexeme cast = new Lexeme(CAST, tree.getLineNumber());
-                            cast.addChild(new Lexeme(STR_KEYWORD, tree.getLineNumber()));
-                            cast.addChild(lexeme);
-                            Lexeme castedString = evalCast(cast, environment);
-                            if (castedString != null) {
-                                temp.append(castedString.getStringVal());
-                                temp.append(" ");
-                            }
-                        }
-                        if (temp.length() > 1) temp = new StringBuilder(temp.substring(0, temp.length() - 1));
-                        temp.append(")");
-                        return new Lexeme(STRING, tree.getLineNumber(), temp.toString());
-                    case TF_KEYWORD:
-                        return new Lexeme(BOOLEAN, tree.getLineNumber(), value.arrayVal.size() != 0);
-                    case ARR_KEYWORD:
-                        return value;
-                    default:
-                        error("Could not perform cast", tree);
-                        return null;
-                }
-            case NOTHING_KEYWORD:
-                error("Could not perform cast with nothing keyword", tree);
-                return null;
-            default:
-                error("Could not perform cast", tree);
                 return null;
         }
     }

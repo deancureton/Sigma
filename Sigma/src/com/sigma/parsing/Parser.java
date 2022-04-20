@@ -125,7 +125,7 @@ public class Parser {
         consume(FUNC_KEYWORD);
         funcDef.addChild(consume(IDENTIFIER));
         consume(ASSIGN_OPERATOR);
-        funcDef.addChild(functionArgs());
+        funcDef.addChild(functionParams());
         funcDef.addChild(block());
         consume(BANGBANG);
         return funcDef;
@@ -299,7 +299,6 @@ public class Parser {
     private Lexeme primary() {
         log("primary");
         if (functionCallPending()) return functionCall();
-        else if (castPending()) return cast();
         else if (check(NUMBER)) return consume(NUMBER);
         else if (check(IDENTIFIER)) return consume(IDENTIFIER);
         else if (check(STRING)) return consume(STRING);
@@ -320,16 +319,6 @@ public class Parser {
         return parenthesizedExpression;
     }
 
-    private Lexeme type() {
-        log("type");
-        if (check(STR_KEYWORD)) return consume(STR_KEYWORD);
-        else if (check(NUM_KEYWORD)) return consume(NUM_KEYWORD);
-        else if (check(TF_KEYWORD)) return consume(TF_KEYWORD);
-        else if (check(ARR_KEYWORD)) return consume(ARR_KEYWORD);
-        else error("Expected type keyword.");
-        return null;
-    }
-
     private Lexeme regularAssignment() {
         log("regularAssignment");
         Lexeme regularAssignment = new Lexeme(REGULAR_ASSIGNMENT, currentLexeme.getLineNumber());
@@ -340,13 +329,13 @@ public class Parser {
         return regularAssignment;
     }
 
-    private Lexeme functionArgs() {
-        log("functionArgs");
-        Lexeme functionArgs = new Lexeme(FUNCTION_ARGS, currentLexeme.getLineNumber());
+    private Lexeme functionParams() {
+        log("functionParams");
+        Lexeme functionParams = new Lexeme(FUNCTION_PARAMS, currentLexeme.getLineNumber());
         while (check(IDENTIFIER)) {
-            functionArgs.addChild(consume(IDENTIFIER));
+            functionParams.addChild(consume(IDENTIFIER));
         }
-        return functionArgs;
+        return functionParams;
     }
 
     private Lexeme block() {
@@ -528,28 +517,6 @@ public class Parser {
         return new Lexeme(ARRAY, currentLexeme.getLineNumber(), arrayList);
     }
 
-    private Lexeme cast() {
-        log("cast");
-        Lexeme cast = new Lexeme(CAST, currentLexeme.getLineNumber());
-        cast.addChild(type());
-        consume(DOT);
-        if (check(NUMBER)) {
-            cast.addChild(consume(NUMBER));
-        } else if (check(IDENTIFIER)) {
-            cast.addChild(consume(IDENTIFIER));
-        } else if (check(STRING)) {
-            cast.addChild(consume(STRING));
-        } else if (check(BOOLEAN)) {
-            cast.addChild(consume(BOOLEAN));
-        } else if (arrayPending()) {
-            cast.addChild(array());
-        } else {
-            error("Unexpected type casting.");
-            return null;
-        }
-        return cast;
-    }
-
     private Lexeme functionCall() {
         log("functionCall");
         Lexeme functionCall = new Lexeme(FUNCTION_CALL, currentLexeme.getLineNumber());
@@ -674,7 +641,7 @@ public class Parser {
     }
 
     private boolean primaryPending() {
-        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || check(NOTHING_KEYWORD) || arrayPending() || castPending() || functionCallPending() || parenthesizedExpressionPending();
+        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || check(NOTHING_KEYWORD) || arrayPending() || functionCallPending() || parenthesizedExpressionPending();
     }
 
     private boolean parenthesizedExpressionPending() {
@@ -723,14 +690,6 @@ public class Parser {
 
     private boolean arrayPending() {
         return check(OPEN_PAREN);
-    }
-
-    private boolean castPending() {
-        return typePending() && checkNext(DOT);
-    }
-
-    private boolean typePending() {
-        return check(STR_KEYWORD) || check(NUM_KEYWORD) || check(TF_KEYWORD) || check(ARR_KEYWORD);
     }
 
     private boolean functionCallPending() {

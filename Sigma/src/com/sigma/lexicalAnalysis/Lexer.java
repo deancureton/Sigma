@@ -26,12 +26,8 @@ public class Lexer {
     // Keywords
     private HashMap<String, TokenType> getKeywords() {
         HashMap<String, TokenType> keywords = new HashMap<>();
-        keywords.put("num", NUM_KEYWORD);
-        keywords.put("str", STR_KEYWORD);
-        keywords.put("tf", TF_KEYWORD);
         keywords.put("var", VAR_KEYWORD);
         keywords.put("func", FUNC_KEYWORD);
-        keywords.put("arr", ARR_KEYWORD);
         keywords.put("for", FOR_KEYWORD);
         keywords.put("foreach", FOREACH_KEYWORD);
         keywords.put("when", WHEN_KEYWORD);

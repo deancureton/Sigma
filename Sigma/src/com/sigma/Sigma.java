@@ -45,7 +45,7 @@ public class Sigma {
 
         Evaluator evaluator = new Evaluator();
         evaluator.eval(programParseTree, global);
-        evaluator.print();
+        //evaluator.print();
         System.out.println();
         System.out.println(global);
 

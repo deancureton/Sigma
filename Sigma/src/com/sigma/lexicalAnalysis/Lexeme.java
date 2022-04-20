@@ -115,9 +115,8 @@ public class Lexeme {
         if (!Objects.equals(compare.getStringVal(), this.getStringVal())) result = false;
         if (!Objects.equals(compare.getNumVal(), this.getNumVal())) result = false;
         if (!Objects.equals(compare.getBoolVal(), this.getBoolVal())) result = false;
-        if (this.arrayVal != null) {
-            if (!(this.arrayVal.containsAll(compare.arrayVal) && compare.arrayVal.containsAll(this.arrayVal)))
-                result = false;
+        if (this.arrayVal != null && compare.arrayVal != null) {
+            if (!this.arrayVal.equals(compare.arrayVal)) result = false;
         }
         return result;
     }
