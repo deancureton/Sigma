@@ -41,11 +41,11 @@ This block of code would output `1`.
 
 Defining functions in Sigma is very similar to regular variable declaration, except with different keywords. Let's start with an example:
 ```
-func x <- arg1 arg2 arg3 »
+func x <- arg1, arg2, arg3 »
     log { { arg1 + arg2 + arg3 } }‼️
 «‼️
 ```
-This is a simple function that takes in 3 arguments and prints their values added together. As you can see, the `func` keyword denotes the creation of a function in Sigma. The arrow sign signifies assignment. Next, the arguments are listed separated by spaces. Then, a `»` character denotes the beginning of the main block of the function. Finally, close the function declaration with the `«` character and a double exclamation point emoji.
+This is a simple function that takes in 3 arguments and prints their values added together. As you can see, the `func` keyword denotes the creation of a function in Sigma. The arrow sign signifies assignment. Next, the arguments are listed separated by commas. Then, a `»` character denotes the beginning of the main block of the function. Finally, close the function declaration with the `«` character and a double exclamation point emoji.
 
 To return a value from a function, place the value as the last statement in its body. For example:
 ```
@@ -59,8 +59,8 @@ This function would return the value of `arg` converted to a string.
 
 To call the function `x` defined above, we would simply write:
 ```
-x {1 2 3}‼️
-x {4 5 6}‼️
+x {1, 2, 3}‼️
+x {4, 5, 6}‼️
 ```
 This block of code would log 6, then 15.
 
@@ -147,21 +147,21 @@ This code would output `"Block 2"`. As you can see, if/else statements are now i
 
 As noted before, all arrays in Sigma are dynamic and do not have a set type. To declare an array in Sigma, we must write:
 ```
-var x <- (1 true "three")‼️
+var x <- (1, true, "three")‼️
 ```
-Arrays are surrounded by parentheses and elements are separated by spaces (types are inferred) because Sigma will throw an error if commas exist in a file. To access elements in an array, simply use the `get` function (indexing starts at 0):
+Arrays are surrounded by parentheses and elements are separated by commas (types are inferred). To access elements in an array, simply use the `get` function (indexing starts at 0):
 ```
 log {{ num {get {x 0}} + num{get {x 1}} }}‼️
 ```
 This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
 To assign values in an array, simply use the `set` function (using the array as the first argument, the content as the second, and the index as the third):
 ```
-set {x 2 5}‼️
+set {x, 2, 5}‼️
 ```
 To add or remove elements from an array, call the `add` or `remove` functions:
 ```
-add {x 2 3}‼️
-remove {x 0}‼️
+add {x, 2, 3}‼️
+remove {x, 0}‼️
 ```
 The `add` function takes three parameters: `array`, `content` and `index`, and adds the content to the array at whatever index signified (if `index` is empty, it adds to the end). `remove` takes in `array` and `index` and simply removes the element of the array at the designated index.
 
@@ -176,17 +176,17 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 `abs{num}` calculates the absolute value of a number.
 `floor{num}`, `ceil{num}`, and `round{num}` truncate numbers as in other languages.
 `sqrt{num}` returns the square root of a number.
-`min{num1 num2}` and `max{num1 num2}` calculate the minimum and maximum of two numbers as in other languages.
+`min{num1, num2}` and `max{num1, num2}` calculate the minimum and maximum of two numbers as in other languages.
 `lowercase{str}` converts a string to lowercase letters.
 `uppercase{str}` converts a string to uppercase letters.
-`getchar{str num}` gets the character of a string.
-`substring{str num1 num2}` gets the substring of a string (inclusive for first number, exclusive for second number).
+`getchar{str, num}` gets the character of a string.
+`substring{str, num1, num2}` gets the substring of a string (inclusive for first number, exclusive for second number).
 `length{x}` gets the length of a string or an array.
-`get{arr num}` gets the element of an array at `num`.
-`set{arr content index}` sets the element of an array to `content` at `index`.
-`add{arr content index}` adds a new element to an array.
-`remove{arr index}` removes an element from an array.
-`contains{arr value}` returns `true` or `fals` depending on if the array contains the value.
+`get{arr, num}` gets the element of an array at `num`.
+`set{arr, content, index}` sets the element of an array to `content` at `index`.
+`add{arr, content, index}` adds a new element to an array.
+`remove{arr, index}` removes an element from an array.
+`contains{arr, value}` returns `true` or `fals` depending on if the array contains the value.
 `num{value}`, `str{value}`, `tf{value}` and `arr{value}` returns the conversion of `value` to each type respectively.
 
 # Keyword Overview
