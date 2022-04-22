@@ -96,8 +96,10 @@ public class Parser {
         consume(VAR_KEYWORD);
         Lexeme declaration = new Lexeme(VARIABLE_DECLARATION, currentLexeme.getLineNumber());
         declaration.addChild(consume(IDENTIFIER));
-        consume(ASSIGN_OPERATOR);
-        declaration.addChild(expression());
+        if (check(ASSIGN_OPERATOR)) {
+            consume(ASSIGN_OPERATOR);
+            declaration.addChild(expression());
+        }
         return declaration;
     }
 
@@ -303,7 +305,7 @@ public class Parser {
         else if (check(IDENTIFIER)) return consume(IDENTIFIER);
         else if (check(STRING)) return consume(STRING);
         else if (check(BOOLEAN)) return consume(BOOLEAN);
-        else if (check(NOTHING_KEYWORD)) return consume(NOTHING_KEYWORD);
+        else if (check(NOTHING)) return consume(NOTHING);
         else if (arrayPending()) return array();
         else if (parenthesizedExpressionPending()) return parenthesizedExpression();
         else error("Expected primary.");
@@ -334,6 +336,7 @@ public class Parser {
         Lexeme functionParams = new Lexeme(FUNCTION_PARAMS, currentLexeme.getLineNumber());
         while (check(IDENTIFIER)) {
             functionParams.addChild(consume(IDENTIFIER));
+            if (!check(DOUBLE_FORWARD)) consume(COMMA);
         }
         return functionParams;
     }
@@ -450,7 +453,7 @@ public class Parser {
         Lexeme changeStatement = new Lexeme(CHANGE_STATEMENT, currentLexeme.getLineNumber());
         consume(CHANGE_KEYWORD);
         consume(OPEN_CURLY);
-        changeStatement.addChild(consume(IDENTIFIER));
+        changeStatement.addChild(expression());
         consume(CLOSED_CURLY);
         consume(DOUBLE_FORWARD);
         changeStatement.addChild(changeCases());
@@ -510,8 +513,9 @@ public class Parser {
         log("array");
         consume(OPEN_PAREN);
         ArrayList<Lexeme> arrayList = new ArrayList<>();
-        while (primaryPending()) {
-            arrayList.add(primary());
+        while (expressionPending()) {
+            arrayList.add(expression());
+            if (!check(CLOSED_PAREN)) consume(COMMA);
         }
         consume(CLOSED_PAREN);
         return new Lexeme(ARRAY, currentLexeme.getLineNumber(), arrayList);
@@ -530,8 +534,11 @@ public class Parser {
     private Lexeme callArguments() {
         log("callArguments");
         Lexeme callArguments = new Lexeme(CALL_ARGUMENTS, currentLexeme.getLineNumber());
-        while (primaryPending()) {
-            callArguments.addChild(primary());
+        while (expressionPending()) {
+            callArguments.addChild(expression());
+            if (!check(CLOSED_CURLY)) {
+                consume(COMMA);
+            }
         }
         return callArguments;
     }
@@ -641,7 +648,7 @@ public class Parser {
     }
 
     private boolean primaryPending() {
-        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || check(NOTHING_KEYWORD) || arrayPending() || functionCallPending() || parenthesizedExpressionPending();
+        return check(NUMBER) || check(IDENTIFIER) || check(STRING) || check(BOOLEAN) || check(NOTHING) || arrayPending() || functionCallPending() || parenthesizedExpressionPending();
     }
 
     private boolean parenthesizedExpressionPending() {

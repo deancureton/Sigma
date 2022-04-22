@@ -5,27 +5,12 @@ import com.sigma.environments.Environment;
 import com.sigma.lexicalAnalysis.Lexeme;
 import com.sigma.lexicalAnalysis.TokenType;
 
-import java.util.Random;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 import static com.sigma.lexicalAnalysis.TokenType.*;
 
-// TODO take (return), end (break), fall (continue)
-// TODO add function definition as primitive type in all operations
-
 public class Evaluator {
     private static final boolean printDebugMessages = false;
-
-    /*private static final ArrayList<Lexeme> output = new ArrayList<>();
-
-    public void print() {
-        for (Lexeme lexeme : output) {
-            if (lexeme != null) System.out.println(lexeme);
-        }
-    }*/
 
     public Lexeme eval(Lexeme tree, Environment environment) {
         log("eval");
@@ -47,7 +32,7 @@ public class Evaluator {
         return result;
     }
 
-    public Lexeme evalStatement(Lexeme tree, Environment environment) {
+    private Lexeme evalStatement(Lexeme tree, Environment environment) {
         //log("evalStatement");
         if (tree == null) return null;
 
@@ -80,8 +65,8 @@ public class Evaluator {
             case AND_KEYWORD, OR_KEYWORD,
                     NAND_KEYWORD, NOR_KEYWORD, XOR_KEYWORD, XNOR_KEYWORD -> evalBooleanBinaryOperator(tree, environment);
 
-            case NUMBER, STRING, BOOLEAN, ARRAY, NOTHING_KEYWORD -> tree;
-            case COMMENT -> null;
+            case NUMBER, STRING, BOOLEAN, NOTHING -> tree;
+            case ARRAY -> evalArray(tree, environment);
             case IDENTIFIER -> environment.lookup(tree);
 
             default -> null;
@@ -90,7 +75,14 @@ public class Evaluator {
 
     private Lexeme evalVariableDeclaration(Lexeme tree, Environment environment) {
         log("evalVariableDeclaration");
-        environment.add(tree.getChild(0), evalStatement(tree.getChild(1), environment));
+        if (tree.getNumChildren() == 2) {
+            Lexeme result = evalStatement(tree.getChild(1), environment);
+            environment.add(tree.getChild(0), result);
+        } else if (tree.getNumChildren() == 1) {
+            environment.add(tree.getChild(0), new Lexeme(NOTHING, tree.getLineNumber()));
+        } else {
+            Sigma.runtimeError("Invalid variable declaration", tree);
+        }
         return null;
     }
 
@@ -98,12 +90,8 @@ public class Evaluator {
         log("evalFunctionDefinition");
         tree.setDefiningEnvironment(environment);
         switch (tree.getChild(0).getStringVal()) {
-            case "log", "random", "abs", "floor", "ceil", "round", "sqrt", "min", "max", "lowercase", "uppercase", "getChar", "substring", "length", "get", "set", "add", "remove", "contains", "take", "end", "fall", "str", "num", "tf", "arr" -> {
-                Sigma.runtimeError("Cannot override built-in function " + tree.getChild(0).getStringVal(), tree);
-            }
-            default -> {
-                environment.add(tree.getChild(0), tree);
-            }
+            case "log", "random", "abs", "floor", "ceil", "round", "sqrt", "min", "max", "lowercase", "uppercase", "getChar", "substring", "length", "get", "set", "add", "remove", "contains", "str", "num", "tf", "arr" -> Sigma.runtimeError("Cannot override built-in function " + tree.getChild(0).getStringVal(), tree);
+            default -> environment.add(tree.getChild(0), tree);
         }
         return null;
     }
@@ -116,6 +104,7 @@ public class Evaluator {
                 for (int i = 0; i < tree.getChild(1).getNumChildren(); i++) {
                     System.out.println(evalStatement(tree.getChild(1).getChild(i), environment));
                 }
+                if (tree.getChild(1).getNumChildren() == 0) System.out.println();
                 return null;
             }
             case "random" -> {
@@ -248,7 +237,7 @@ public class Evaluator {
                 }
                 return new Lexeme(STRING, tree.getLineNumber(), arg1.getStringVal().toUpperCase());
             }
-            case "getChar" -> {
+            case "getchar" -> {
                 if (tree.getChild(1).getNumChildren() != 2) {
                     Sigma.runtimeError("Invalid number of function arguments", tree.getChild(1));
                     return null;
@@ -256,10 +245,16 @@ public class Evaluator {
                 Lexeme arg1 = evalStatement(tree.getChild(1).getChild(0), environment);
                 Lexeme arg2 = evalStatement(tree.getChild(1).getChild(1), environment);
                 if (arg1.getType() != STRING || arg2.getType() != NUMBER) {
-                    Sigma.runtimeError("getChar takes in one string and one number arguments", tree.getChild(1));
+                    Sigma.runtimeError("getchar takes in one string and one number arguments", tree.getChild(1));
                     return null;
                 }
-                return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().charAt((int) Math.floor(arg2.getNumVal())));
+                String arg1str = arg1.getStringVal();
+                int index = (int) Math.floor(arg2.getNumVal());
+                if (index > arg1str.length() - 1) {
+                    Sigma.runtimeError("getchar string index out of range", tree.getChild(1));
+                    return null;
+                }
+                return new Lexeme(STRING, tree.getLineNumber(), Character.toString(arg1str.charAt(index)));
             }
             case "substring" -> {
                 if (tree.getChild(1).getNumChildren() != 3) {
@@ -273,7 +268,7 @@ public class Evaluator {
                     Sigma.runtimeError("substring takes in one string and two number arguments", tree.getChild(1));
                     return null;
                 }
-                return new Lexeme(NUMBER, tree.getLineNumber(), arg1.getStringVal().substring((int) Math.floor(arg2.getNumVal()), (int) Math.floor(arg3.getNumVal())));
+                return new Lexeme(STRING, tree.getLineNumber(), arg1.getStringVal().substring((int) Math.floor(arg2.getNumVal()), (int) Math.floor(arg3.getNumVal())));
             }
             case "length" -> {
                 if (tree.getChild(1).getNumChildren() != 1) {
@@ -483,11 +478,12 @@ public class Evaluator {
                 if (closure.getType() != FUNCTION_DEFINITION)
                     error("Attempt to call " + closure.getType() + " as function failed", functionName);
                 Environment definingEnv = closure.getDefiningEnvironment();
-                Environment callEnv = new Environment(definingEnv);
+                Environment funcEnv = new Environment(definingEnv);
+                Environment callEnv = new Environment(funcEnv);
                 Lexeme paramList = closure.getChild(1);
                 Lexeme argList = tree.getChild(1);
                 Lexeme evalArgList = evalArgumentList(argList, environment);
-                callEnv.extend(paramList, evalArgList);
+                funcEnv.extend(paramList, evalArgList);
                 Lexeme functionBody = closure.getChild(2);
                 return evalStatementList(functionBody, callEnv);
             }
@@ -605,20 +601,18 @@ public class Evaluator {
         Lexeme ifExp = evalStatement(tree.getChild(0), environment);
         if (isTruthy(ifExp)) {
             Environment ifEnv = new Environment(environment);
-            evalStatementList(tree.getChild(1), ifEnv);
-            return null;
+            return evalStatementList(tree.getChild(1), ifEnv);
         }
         for (int i = 0; i < tree.getChild(2).getNumChildren(); i++) {
             Lexeme butIfExp = evalStatement(tree.getChild(2).getChild(i).getChild(0), environment);
             if (isTruthy(butIfExp)) {
                 Environment butIfEnv = new Environment(environment);
-                evalStatementList(tree.getChild(2).getChild(i).getChild(1), butIfEnv);
-                return null;
+                return evalStatementList(tree.getChild(2).getChild(i).getChild(1), butIfEnv);
             }
         }
         if (tree.getNumChildren() == 4) {
             Environment butEnv = new Environment(environment);
-            evalStatementList(tree.getChild(3).getChild(0), butEnv);
+            return evalStatementList(tree.getChild(3).getChild(0), butEnv);
         }
         return null;
     }
@@ -629,7 +623,7 @@ public class Evaluator {
             error("Missing identifier", tree);
             return null;
         }
-        Lexeme value = environment.lookup(tree.getChild(0));
+        Lexeme value = evalStatement(tree.getChild(0), environment);
         boolean caught = false;
         for (int i = 0; i < tree.getChild(1).getNumChildren() - 1; i++) {
             Lexeme op = new Lexeme(QUESTION, tree.getLineNumber());
@@ -711,12 +705,13 @@ public class Evaluator {
         Environment loopEnvironment = new Environment(environment);
         Lexeme count = new Lexeme(IDENTIFIER, tree.getLineNumber(), "count");
         loopEnvironment.add(count, new Lexeme(NUMBER, tree.getLineNumber(), 0));
-        Lexeme op = new Lexeme(LESS, tree.getLineNumber());
-        op.addChild(loopEnvironment.lookup(count));
-        op.addChild(tree.getChild(0));
-        while (evalBinaryComparator(op, loopEnvironment) != null && isTruthy(evalBinaryComparator(op, loopEnvironment))) {
+        Lexeme countNum = loopEnvironment.lookup(count);
+        Lexeme condition = eval(tree.getChild(0), environment);
+        while (countNum.getNumVal() < condition.getNumVal()) {
             evalStatementList(tree.getChild(1), loopEnvironment);
             loopEnvironment.update(count, new Lexeme(NUMBER, tree.getLineNumber(), loopEnvironment.lookup(count).getNumVal() + 1));
+            countNum = loopEnvironment.lookup(count);
+            condition = eval(tree.getChild(0), environment);
         }
         return null;
     }
@@ -736,6 +731,9 @@ public class Evaluator {
             case DIVIDE -> {
                 return evalDivide(tree, environment);
             }
+            case DOUBLE_DIVIDE -> {
+                return evalDoubleDivide(tree, environment);
+            }
             case CARET -> {
                 return evalCaret(tree, environment);
             }
@@ -749,115 +747,243 @@ public class Evaluator {
         }
     }
 
-    private Lexeme evalBinaryComparator(Lexeme tree, Environment environment) {
+    private Lexeme evalBinaryComparator(Lexeme tree, Environment environment) { // TODO REDO
         log("evalBinaryComparator");
         Lexeme left = evalStatement(tree.getChild(0), environment);
         Lexeme right = evalStatement(tree.getChild(1), environment);
         TokenType lType = left.getType();
         TokenType rType = right.getType();
-        int lLevel;
-        double lValue;
-        int rLevel;
-        double rValue;
+
         boolean result;
-        switch (lType) {
-            case NUMBER -> {
-                lLevel = 0;
-                lValue = left.getNumVal();
-            }
-            case STRING -> {
-                lLevel = 0;
-                lValue = left.getStringVal().length();
-            }
-            case BOOLEAN -> {
-                lLevel = 0;
-                lValue = left.getBoolVal() ? 1 : 0;
-            }
-            case ARRAY -> {
-                lLevel = 1;
-                lValue = left.arrayVal.size();
-            }
-            default -> {
-                error("Could not calculate binary comparison", tree);
-                return null;
-            }
-        }
-        switch (rType) {
-            case NUMBER -> {
-                rLevel = 0;
-                rValue = right.getNumVal();
-            }
-            case STRING -> {
-                rLevel = 0;
-                rValue = right.getStringVal().length();
-            }
-            case BOOLEAN -> {
-                rLevel = 0;
-                rValue = right.getBoolVal() ? 1 : 0;
-            }
-            case ARRAY -> {
-                rLevel = 1;
-                rValue = right.arrayVal.size();
-            }
-            default -> {
-                error("Could not calculate binary comparison", tree);
-                return null;
-            }
-        }
-        final boolean approx = Math.abs(lValue - rValue) < (lValue + rValue) / 2 * 0.05;
         switch (tree.getType()) {
-            case QUESTION -> {
-                result = lLevel == rLevel && lValue == rValue;
-            }
-            case NOT_QUESTION -> {
-                result = !(lLevel == rLevel && lValue == rValue);
-            }
+            case QUESTION -> result = left.equals(right);
+            case NOT_QUESTION -> result = !left.equals(right);
             case APPROX -> {
-                result = lLevel == rLevel && approx;
+                if (lType == NUMBER && rType == NUMBER) {
+                    result = Math.abs(left.getNumVal() - right.getNumVal()) < (left.getNumVal() + right.getNumVal()) / 2 * 0.05;
+                } else {
+                    result = false;
+                }
             }
             case NOT_APPROX -> {
-                result = !(lLevel == rLevel && approx);
-            }
-            case DOUBLE_QUESTION -> {
-                result = lType == rType;
-            }
-            case NOT_DOUBLE_QUESTION -> {
-                result = !(lType == rType);
-            }
-            case GREATER -> {
-                if (lLevel > rLevel) {
-                    result = true;
-                } else if (lLevel < rLevel) {
-                    result = false;
+                if (lType == NUMBER && rType == NUMBER) {
+                    result = !(Math.abs(left.getNumVal() - right.getNumVal()) < (left.getNumVal() + right.getNumVal()) / 2 * 0.05);
                 } else {
-                    result = lValue > rValue;
+                    result = true;
+                }
+            }
+            case DOUBLE_QUESTION -> result = lType == rType;
+            case NOT_DOUBLE_QUESTION -> result = !(lType == rType);
+            case GREATER -> {
+                switch (lType) {
+                    case NUMBER:
+                        switch (rType) {
+                            case NUMBER -> result = left.getNumVal() > right.getNumVal();
+                            case STRING -> result = left.getNumVal() > right.getStringVal().length();
+                            case BOOLEAN -> result = left.getNumVal() > (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case STRING:
+                        switch (rType) {
+                            case NUMBER -> result = left.getStringVal().length() > right.getNumVal();
+                            case STRING -> result = left.getStringVal().length() > right.getStringVal().length();
+                            case BOOLEAN -> result = left.getStringVal().length() > (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case BOOLEAN:
+                        switch (rType) {
+                            case NUMBER -> result = (left.getBoolVal() ? 1 : 0) > right.getNumVal();
+                            case STRING -> result = (left.getBoolVal() ? 1 : 0) > right.getStringVal().length();
+                            case BOOLEAN -> result = (left.getBoolVal() ? 1 : 0) > (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case ARRAY:
+                        switch (rType) {
+                            case NUMBER, STRING, BOOLEAN -> result = true;
+                            case ARRAY -> result = left.arrayVal.size() > right.arrayVal.size();
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    default:
+                        Sigma.runtimeError("Could not compute binary operator", tree);
+                        return null;
                 }
             }
             case LESS -> {
-                if (lLevel > rLevel) {
-                    result = false;
-                } else if (lLevel < rLevel) {
-                    result = true;
-                } else {
-                    result = lValue < rValue;
+                switch (lType) {
+                    case NUMBER:
+                        switch (rType) {
+                            case NUMBER -> result = left.getNumVal() < right.getNumVal();
+                            case STRING -> result = left.getNumVal() < right.getStringVal().length();
+                            case BOOLEAN -> result = left.getNumVal() < (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case STRING:
+                        switch (rType) {
+                            case NUMBER -> result = left.getStringVal().length() < right.getNumVal();
+                            case STRING -> result = left.getStringVal().length() < right.getStringVal().length();
+                            case BOOLEAN -> result = left.getStringVal().length() < (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case BOOLEAN:
+                        switch (rType) {
+                            case NUMBER -> result = (left.getBoolVal() ? 1 : 0) < right.getNumVal();
+                            case STRING -> result = (left.getBoolVal() ? 1 : 0) < right.getStringVal().length();
+                            case BOOLEAN -> result = (left.getBoolVal() ? 1 : 0) < (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case ARRAY:
+                        switch (rType) {
+                            case NUMBER, STRING, BOOLEAN -> result = false;
+                            case ARRAY -> result = left.arrayVal.size() < right.arrayVal.size();
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    default:
+                        Sigma.runtimeError("Could not compute binary operator", tree);
+                        return null;
                 }
             }
             case GEQ, GREATER_QUESTION -> {
-                if (lLevel > rLevel) {
-                    result = true;
-                } else if (lLevel < rLevel) {
-                    result = false;
-                } else {
-                    result = lValue >= rValue;
+                switch (lType) {
+                    case NUMBER:
+                        switch (rType) {
+                            case NUMBER -> result = left.getNumVal() >= right.getNumVal();
+                            case STRING -> result = left.getNumVal() >= right.getStringVal().length();
+                            case BOOLEAN -> result = left.getNumVal() >= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case STRING:
+                        switch (rType) {
+                            case NUMBER -> result = left.getStringVal().length() >= right.getNumVal();
+                            case STRING -> result = left.getStringVal().length() >= right.getStringVal().length();
+                            case BOOLEAN -> result = left.getStringVal().length() >= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case BOOLEAN:
+                        switch (rType) {
+                            case NUMBER -> result = (left.getBoolVal() ? 1 : 0) >= right.getNumVal();
+                            case STRING -> result = (left.getBoolVal() ? 1 : 0) >= right.getStringVal().length();
+                            case BOOLEAN -> result = (left.getBoolVal() ? 1 : 0) >= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = false;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case ARRAY:
+                        switch (rType) {
+                            case NUMBER, STRING, BOOLEAN -> result = true;
+                            case ARRAY -> result = left.arrayVal.size() >= right.arrayVal.size();
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    default:
+                        Sigma.runtimeError("Could not compute binary operator", tree);
+                        return null;
                 }
             }
             case LEQ, LESS_QUESTION -> {
-                if (lLevel > rLevel) {
-                    result = false;
-                } else if (lLevel < rLevel) {
-                    result = true;
-                } else {
-                    result = lValue <= rValue;
+                switch (lType) {
+                    case NUMBER:
+                        switch (rType) {
+                            case NUMBER -> result = left.getNumVal() <= right.getNumVal();
+                            case STRING -> result = left.getNumVal() <= right.getStringVal().length();
+                            case BOOLEAN -> result = left.getNumVal() <= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case STRING:
+                        switch (rType) {
+                            case NUMBER -> result = left.getStringVal().length() <= right.getNumVal();
+                            case STRING -> result = left.getStringVal().length() <= right.getStringVal().length();
+                            case BOOLEAN -> result = left.getStringVal().length() <= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case BOOLEAN:
+                        switch (rType) {
+                            case NUMBER -> result = (left.getBoolVal() ? 1 : 0) <= right.getNumVal();
+                            case STRING -> result = (left.getBoolVal() ? 1 : 0) <= right.getStringVal().length();
+                            case BOOLEAN -> result = (left.getBoolVal() ? 1 : 0) <= (right.getBoolVal() ? 1 : 0);
+                            case ARRAY -> result = true;
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    case ARRAY:
+                        switch (rType) {
+                            case NUMBER, STRING, BOOLEAN -> result = false;
+                            case ARRAY -> result = left.arrayVal.size() <= right.arrayVal.size();
+                            default -> {
+                                Sigma.runtimeError("Could not compute binary operator", tree);
+                                return null;
+                            }
+                        }
+                        break;
+                    default:
+                        Sigma.runtimeError("Could not compute binary operator", tree);
+                        return null;
                 }
             }
             default -> {
@@ -876,21 +1002,11 @@ public class Evaluator {
         boolean r = isTruthy(right);
         boolean result;
         switch (tree.getType()) {
-            case AND_KEYWORD -> {
-                result = l && r;
-            }
-            case OR_KEYWORD -> {
-                result = l || r;
-            }
-            case NAND_KEYWORD -> {
-                result = !(l && r);
-            }
-            case XOR_KEYWORD -> {
-                result = l ^ r;
-            }
-            case XNOR_KEYWORD -> {
-                result = l == r;
-            }
+            case AND_KEYWORD -> result = l && r;
+            case OR_KEYWORD -> result = l || r;
+            case NAND_KEYWORD -> result = !(l && r);
+            case XOR_KEYWORD -> result = l ^ r;
+            case XNOR_KEYWORD -> result = l == r;
             default -> {
                 error("Problem with binary boolean operator", tree);
                 return null;
@@ -934,7 +1050,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -949,9 +1065,9 @@ public class Evaluator {
                     case BOOLEAN:
                         return new Lexeme(NUMBER, tree.getLineNumber(), l.getNumVal() + (r.getBoolVal() ? 1 : 0));
                     case ARRAY:
-                        ArrayList<Lexeme> tempL = l.arrayVal;
-                        tempL.add(0, r);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), tempL);
+                        ArrayList<Lexeme> tempR = r.arrayVal;
+                        tempR.add(0, l);
+                        return new Lexeme(ARRAY, tree.getLineNumber(), tempR);
                     default:
                         error("Could not calculate plus operation", tree);
                         return null;
@@ -965,9 +1081,9 @@ public class Evaluator {
                     case BOOLEAN:
                         return new Lexeme(STRING, tree.getLineNumber(), l.getStringVal() + (r.getBoolVal() ? "true" : "fals"));
                     case ARRAY:
-                        ArrayList<Lexeme> tempL = l.arrayVal;
-                        tempL.add(0, r);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), tempL);
+                        ArrayList<Lexeme> tempR = r.arrayVal;
+                        tempR.add(0, l);
+                        return new Lexeme(ARRAY, tree.getLineNumber(), tempR);
                     default:
                         error("Could not calculate plus operation", tree);
                         return null;
@@ -981,9 +1097,9 @@ public class Evaluator {
                     case BOOLEAN:
                         return new Lexeme(BOOLEAN, tree.getLineNumber(), l.getBoolVal() || r.getBoolVal());
                     case ARRAY:
-                        ArrayList<Lexeme> tempL = l.arrayVal;
-                        tempL.add(0, r);
-                        return new Lexeme(ARRAY, tree.getLineNumber(), tempL);
+                        ArrayList<Lexeme> tempR = r.arrayVal;
+                        tempR.add(0, l);
+                        return new Lexeme(ARRAY, tree.getLineNumber(), tempR);
                     default:
                         error("Could not calculate plus operation", tree);
                         return null;
@@ -1027,7 +1143,7 @@ public class Evaluator {
                     ArrayList<Lexeme> temp = child.arrayVal;
                     Collections.reverse(temp);
                     return new Lexeme(ARRAY, tree.getLineNumber(), temp);
-                case NOTHING_KEYWORD:
+                case NOTHING:
                     return child;
                 default:
                     error("Invalid type after unary minus operator", tree);
@@ -1039,7 +1155,7 @@ public class Evaluator {
             TokenType lType = l.getType();
             TokenType rType = r.getType();
 
-            if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+            if (lType == NOTHING || rType == NOTHING) {
                 error("Could not calculate binary operation with nothing keyword", tree);
                 return null;
             }
@@ -1138,7 +1254,7 @@ public class Evaluator {
                 return new Lexeme(BOOLEAN, tree.getLineNumber(), !child.getBoolVal());
             case ARRAY:
                 return new Lexeme(BOOLEAN, tree.getLineNumber(), child.arrayVal.size() == 0);
-            case NOTHING_KEYWORD:
+            case NOTHING:
                 return child;
             default:
                 error("Invalid type after not operator", tree);
@@ -1153,7 +1269,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -1207,7 +1323,7 @@ public class Evaluator {
                     case BOOLEAN:
                         return new Lexeme(BOOLEAN, tree.getLineNumber(), l.getBoolVal() && r.getBoolVal());
                     case ARRAY:
-                        return new Lexeme(ARRAY, tree.getLineNumber(), l.getBoolVal() ? r.arrayVal : new ArrayList<Lexeme>());
+                        return new Lexeme(ARRAY, tree.getLineNumber(), l.getBoolVal() ? r.arrayVal : new ArrayList<>());
                     default:
                         error("Could not calculate times operation", tree);
                         return null;
@@ -1227,11 +1343,11 @@ public class Evaluator {
                         }
                         return new Lexeme(ARRAY, tree.getLineNumber(), tempL);
                     case BOOLEAN:
-                        return new Lexeme(ARRAY, tree.getLineNumber(), l.getBoolVal() ? r.arrayVal : new ArrayList<Lexeme>());
+                        return new Lexeme(ARRAY, tree.getLineNumber(), l.getBoolVal() ? r.arrayVal : new ArrayList<>());
                     case ARRAY:
                         tempL = l.arrayVal;
                         tempL.addAll(r.arrayVal);
-                        ArrayList<Lexeme> newList = new ArrayList<Lexeme>();
+                        ArrayList<Lexeme> newList = new ArrayList<>();
                         for (Lexeme lexeme : tempL) {
                             boolean duplicate = false;
                             for (Lexeme newLexeme : newList) {
@@ -1258,7 +1374,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -1328,15 +1444,19 @@ public class Evaluator {
                         return null;
                 }
             case ARRAY:
+                ArrayList<Lexeme> temp;
                 switch (rType) {
                     case NUMBER:
-                        return new Lexeme(ARRAY, tree.getLineNumber(), (ArrayList<Lexeme>) l.arrayVal.subList(0, (int) (l.arrayVal.size() / r.getNumVal())));
+                        temp = new ArrayList<>(l.arrayVal.subList(0, (int) (l.arrayVal.size() / r.getNumVal())));
+                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
                     case STRING:
-                        return new Lexeme(ARRAY, tree.getLineNumber(), (ArrayList<Lexeme>) l.arrayVal.subList(0, l.arrayVal.size() / r.getStringVal().length()));
+                        temp = new ArrayList<>(l.arrayVal.subList(0, l.arrayVal.size() / r.getStringVal().length()));
+                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
                     case BOOLEAN:
                         return new Lexeme(ARRAY, tree.getLineNumber(), r.getBoolVal() ? l.arrayVal : new ArrayList<>());
                     case ARRAY:
-                        return new Lexeme(ARRAY, tree.getLineNumber(), (ArrayList<Lexeme>) l.arrayVal.subList(0, l.arrayVal.size() / r.arrayVal.size()));
+                        temp = new ArrayList<>(l.arrayVal.subList(0, l.arrayVal.size() / r.arrayVal.size()));
+                        return new Lexeme(ARRAY, tree.getLineNumber(), temp);
                     default:
                         error("Could not calculate divide operation", tree);
                         return null;
@@ -1354,7 +1474,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -1450,7 +1570,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -1566,7 +1686,7 @@ public class Evaluator {
         TokenType lType = l.getType();
         TokenType rType = r.getType();
 
-        if (lType == NOTHING_KEYWORD || rType == NOTHING_KEYWORD) {
+        if (lType == NOTHING || rType == NOTHING) {
             error("Could not calculate binary operation with nothing keyword", tree);
             return null;
         }
@@ -1598,7 +1718,7 @@ public class Evaluator {
                     case NUMBER:
                         return new Lexeme(STRING, tree.getLineNumber(), l.getStringVal().substring(0, (int) (l.getStringVal().length() % r.getNumVal())));
                     case STRING:
-                        return new Lexeme(STRING, tree.getLineNumber(), l.getStringVal().substring(0, (int) (l.getStringVal().length() % r.getStringVal().length())));
+                        return new Lexeme(STRING, tree.getLineNumber(), l.getStringVal().substring(0, l.getStringVal().length() % r.getStringVal().length()));
                     case BOOLEAN:
                         return new Lexeme(BOOLEAN, tree.getLineNumber(), !(l.getStringVal().equals("")) && r.getBoolVal());
                     case ARRAY:
@@ -1666,10 +1786,18 @@ public class Evaluator {
         }
     }
 
+    private Lexeme evalArray(Lexeme tree, Environment environment) {
+        ArrayList<Lexeme> result = new ArrayList<>();
+        for (Lexeme element : tree.arrayVal) {
+            result.add(evalStatement(element, environment));
+        }
+        return new Lexeme(ARRAY, tree.getLineNumber(), result);
+    }
+
     private boolean isTruthy(Lexeme lexeme) {
-        if (lexeme.getType() == NOTHING_KEYWORD) return false;
+        if (lexeme.getType() == NOTHING) return false;
         return ((lexeme.getNumVal() == null ? 1 : lexeme.getNumVal()) != 0) // if non null, not 0
-                && !((lexeme.getStringVal() == null ? " " : lexeme.getStringVal()).equals("")) // if non null, not empty
+                && !((lexeme.getStringVal() == null ? " " : lexeme.getStringVal()).equals("")) // if non-null, not empty
                 && (lexeme.getBoolVal() == null || lexeme.getBoolVal()); // if non null, not false
     }
 

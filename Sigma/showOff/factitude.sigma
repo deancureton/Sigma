@@ -1,0 +1,21 @@
+func factorial <- n »
+    var return‼
+    if { n ? 0 } »
+        return <- 1‼
+    « but »
+        return <- n * factorial { n - 1 }‼
+    «
+    return‼
+«‼
+func factitude <- x, y »
+    var return‼
+    if { x > y } »
+        return <- x * factorial { y }‼
+    « but »
+        return <- y * factorial { x }‼
+    «
+    return‼
+«‼
+log { factitude { 4, 0 } }‼
+log { factitude { 6, 3 } }‼
+log { factitude { 3, 6 } }‼

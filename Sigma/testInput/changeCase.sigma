@@ -1,3 +1,4 @@
+var x <- 3‼
 change {x} »
     case {3} »
         \code

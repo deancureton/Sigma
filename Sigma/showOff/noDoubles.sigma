@@ -1,0 +1,15 @@
+func noDoubles <- a, b, c, d »
+    var array <- (a, b, c, d)‼
+    var result <- true‼
+    for {var i <- 0‼ i < 3‼ ++i} »
+        \log { get { array, i } }‼
+        \log { get { array, i+1 } }‼
+        if { { get { array, i } } ? { get { array, { i+1 } } } } »
+            result <- fals‼
+        «
+    «
+    result‼
+«‼
+log { noDoubles { 0, 1, 0, 1 } }‼
+log { noDoubles { 0, 1, 1, 0 } }‼
+log { noDoubles { 1, 0, 2, 2 } }‼

@@ -1,0 +1,7 @@
+func triple <- string »
+    string * 3‼
+«‼
+func apply <- f, string »
+    f { string }‼
+«‼
+log { apply { triple, "Hello" } }‼

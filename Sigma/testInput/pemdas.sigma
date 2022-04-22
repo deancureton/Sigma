@@ -1,1 +1,1 @@
-1 + 2 * 3 / 4 and 3 / not 1 < 5 ?? 1 ^ 5 or -3 xor ++0 implies 0
+1 + 2 * 3 / 4 and 3 / not 1 < 5 ?? 1 ^ 5 or -3 xor ++0 nand 0

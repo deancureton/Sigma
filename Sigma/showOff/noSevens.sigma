@@ -1,0 +1,14 @@
+func noSevens <- n »
+    var string <- str { n }‼
+    var string2 <- substring { string, 0, length { string } - 2 }‼
+    var result <- true‼
+    for { var i <- 0‼ i < length { string2 }‼ ++i } »
+        if { getchar { string2, i } ? "7" } »
+            result <- fals‼
+        «
+    «
+    result‼
+«‼
+log { noSevens { 171 } }‼
+log { noSevens { 423 } }‼
+log { noSevens { 10000002476 } }‼

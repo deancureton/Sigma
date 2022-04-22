@@ -3,12 +3,14 @@ package com.sigma.environments;
 import com.sigma.Sigma;
 import com.sigma.lexicalAnalysis.*;
 
+import static com.sigma.lexicalAnalysis.TokenType.*;
+
 import java.util.ArrayList;
 
 public class Environment {
     Environment parent;
-    ArrayList<Lexeme> names = new ArrayList<>();
-    ArrayList<Lexeme> values = new ArrayList<>();
+    public ArrayList<Lexeme> names = new ArrayList<>();
+    public ArrayList<Lexeme> values = new ArrayList<>();
 
     public Environment(Environment parent) {
         this.parent = parent;
@@ -38,13 +40,19 @@ public class Environment {
                 this.parent.update(name, value);
             }
         } else {
-            values.get(index).setBoolVal(null);
-            values.get(index).setNumVal(null);
-            values.get(index).setStringVal(null);
-            values.get(index).setType(value.getType());
-            values.get(index).setBoolVal(value.getBoolVal());
-            values.get(index).setNumVal(value.getNumVal());
-            values.get(index).setStringVal(value.getStringVal());
+            int lineNumber = values.get(index).getLineNumber();
+            values.remove(index);
+            if (value.getNumVal() != null) {
+                values.add(new Lexeme(NUMBER, lineNumber, value.getNumVal()));
+                return;
+            }
+            if (value.getStringVal() != null) {
+                values.add(new Lexeme(STRING, lineNumber, value.getStringVal()));
+                return;
+            }
+            if (value.getBoolVal() != null) {
+                values.add(new Lexeme(BOOLEAN, lineNumber, value.getBoolVal()));
+            }
         }
     }
 

@@ -1,0 +1,6 @@
+func maxOfThree <- x, y, z »
+    max { max { x, y }, z }‼
+«‼
+log { maxOfThree { 0, 0, 1 } }‼
+log { maxOfThree { 0, 0, 0 } }‼
+log { maxOfThree { -10, 100, 10 } }‼

@@ -1,0 +1,12 @@
+func squareMachine <- n »
+    func x <- »
+        n ^ 2‼
+    «‼
+    x‼
+«‼
+
+var f <- squareMachine { 3 }‼
+var g <- squareMachine { 4 }‼
+
+log { f {} }‼
+log { g {} }‼

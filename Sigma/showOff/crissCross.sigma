@@ -1,0 +1,14 @@
+func crissCross <- str1, str2, n »
+    var return‼
+    if { n ? 0 } »
+        return <- ""‼
+    « butif { n % 2 ? 0 } »
+        return <- str1 + str2 + crissCross { str1, str2, n - 1 }‼
+    « butif { n % 2 ? 1 } »
+        return <- str2 + str1 + crissCross { str1, str2, n - 1 }‼
+    «
+    return‼
+«‼
+log { crissCross { "Hello", "Bye", 2 } }‼
+log { crissCross { "A", "B", 4 } }‼
+log { crissCross { "Oh", "Wow", 0 } }‼

@@ -1,0 +1,44 @@
+var array <- (1, true, "hello world", 5)‼
+change { {get{array, 2}} } »
+    case {1} »
+        log {"This should never run"}‼ \ Here is a comment
+    «
+    case {true} »
+        log {"Hello"}‼
+    «
+    nocase »
+        for {var i <- 0‼ i < 5‼ ++i} »
+            log{i}‼
+        «
+    «
+«
+
+log{}‼
+
+add{array, 3, 0}‼
+log{array}‼
+foreach {var i of array} »
+    log { random{0, 10} * i }‼
+«
+
+log{}‼
+
+loop {3} »
+    log { {"contains " + count + "? " + contains{array, count}}}‼
+    log { {"number type? " + { get{array, count} ?? 1 } } }‼
+«
+
+log{}‼
+
+func fibonacci <- x »
+    var return‼
+    if {x ? 0} » return <- 0‼ «
+    butif {x ? 1} » return <- 1‼ «
+    but » return <- fibonacci{ x - 1 } + fibonacci{ x - 2 }‼ «
+    return‼
+«‼
+log{ str{fibonacci{10}} }‼
+
+log{}‼
+
+log{3 or 5 + 1 * 0 and 0 xnor 100 + "" * true / "string" % (0, 1, 2, 3, 4, 5) ^ 3 / 100}‼

@@ -1,8 +1,7 @@
 var x <- 3‼
 x <- "str"‼
 ++x‼
-func x <- num1 num2 »
-    take {nothing}‼
+func x <- num1, num2 »
     \code
 «‼
 x { 1 2 3 }‼
@@ -39,7 +38,7 @@ if {5 + 5} »
 3‼
 ++3‼
 
-(1 "yeah" true 4)‼
+(1, "yeah", true, 4)‼
 
 change {identifier} »
     case {primary} »

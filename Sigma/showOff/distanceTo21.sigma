@@ -1,0 +1,13 @@
+func distanceTo21 <- n »
+    var return‼
+    if { n > 21 } »
+        return <- 2 * abs { n - 21 }‼
+    « but »
+        return <- abs { n - 21 }‼
+    «
+    return‼
+«‼
+log { distanceTo21 { 19 } }‼
+log { distanceTo21 { 23 } }‼
+log { distanceTo21 { 21 } }‼
+log { distanceTo21 { -10 } }‼

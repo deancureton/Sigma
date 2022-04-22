@@ -2,13 +2,14 @@ package com.sigma.lexicalAnalysis;
 
 import com.sigma.environments.Environment;
 
-import java.lang.reflect.Array;
+import static com.sigma.lexicalAnalysis.TokenType.*;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
 public class Lexeme {
     // Instance Variables
-    private TokenType type;
+    private final TokenType type;
     private final Integer lineNumber;
 
     private String stringVal;
@@ -75,22 +76,6 @@ public class Lexeme {
         return definingEnvironment;
     }
 
-    public void setType(TokenType type) {
-        this.type = type;
-    }
-
-    public void setStringVal(String stringVal) {
-        this.stringVal = stringVal;
-    }
-
-    public void setNumVal(Double numVal) {
-        this.numVal = numVal;
-    }
-
-    public void setBoolVal(Boolean boolVal) {
-        this.boolVal = boolVal;
-    }
-
     public void setDefiningEnvironment(Environment definingEnvironment) {
         this.definingEnvironment = definingEnvironment;
     }
@@ -110,8 +95,7 @@ public class Lexeme {
 
     // Equality
     public boolean equals(Lexeme compare) {
-        boolean result = true;
-        if (compare.getType() != this.getType()) result = false;
+        boolean result = compare.getType() == this.getType();
         if (!Objects.equals(compare.getStringVal(), this.getStringVal())) result = false;
         if (!Objects.equals(compare.getNumVal(), this.getNumVal())) result = false;
         if (!Objects.equals(compare.getBoolVal(), this.getBoolVal())) result = false;
@@ -124,22 +108,24 @@ public class Lexeme {
     // toString
     public String toString() {
         String output = "[" + getType() + "] (line " + getLineNumber() + ")";
-        if (getStringVal() != null) {
-            if (getType() == TokenType.STRING) {
-                output += ": \"" + getStringVal() + "\"";
-            } else {
-                output += ": " + getStringVal();
+        if (getType() != COMMENT) {
+            if (getStringVal() != null) {
+                if (getType() == TokenType.STRING) {
+                    output += ": \"" + getStringVal() + "\"";
+                } else {
+                    output += ": " + getStringVal();
+                }
+            } else if (getNumVal() != null) {
+                output += ": " + getNumVal();
+            } else if (getBoolVal() != null) {
+                if (!getBoolVal()) {
+                    output += ": fals";
+                } else {
+                    output += ": " + getBoolVal();
+                }
+            } else if (arrayVal != null) {
+                output += ": " + arrayVal;
             }
-        } else if (getNumVal() != null) {
-            output += ": " + getNumVal();
-        } else if (getBoolVal() != null) {
-            if (!getBoolVal()) {
-                output += ": fals";
-            } else {
-                output += ": " + getBoolVal();
-            }
-        } else if (arrayVal != null) {
-            output += ": " + arrayVal.toString();
         }
         return output;
     }

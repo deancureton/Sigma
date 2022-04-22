@@ -1,11 +1,12 @@
-3+4+5+6‼
-3‼
-!x‼
-(1, "yeah", true, 4)‼
-x { 1 2 "str" }‼
-x.num‼
--3‼
-++3‼
-{3}‼
+\.log{3+4+5+6}‼
+log{3}‼
+log{!x}‼
+log{(1, "yeah", true, 4)}‼
+log{x { 1, 2, "str" }}‼
+log{num{x}}‼
+log{-3}‼
+log{++3}‼
+log{{3}}‼.\
 
-{not a.num}
+var a <- "test"‼
+log{not num{a}}‼

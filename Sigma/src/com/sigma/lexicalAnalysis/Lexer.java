@@ -33,7 +33,7 @@ public class Lexer {
         keywords.put("when", WHEN_KEYWORD);
         keywords.put("loop", LOOP_KEYWORD);
         keywords.put("of", OF_KEYWORD);
-        keywords.put("nothing", NOTHING_KEYWORD);
+        keywords.put("nothing", NOTHING);
         keywords.put("and", AND_KEYWORD);
         keywords.put("or", OR_KEYWORD);
         keywords.put("not", NOT_KEYWORD);
@@ -116,11 +116,10 @@ public class Lexer {
 
             // Strictly one character
             case '=':
-                Sigma.syntaxError("Equals sign", lineNumber);
+                Sigma.runtimeError("Equals sign", lineNumber);
                 break;
             case ',':
-                Sigma.syntaxError("Comma", lineNumber);
-                break;
+                return new Lexeme(COMMA, lineNumber);
             case '‼':
                 return new Lexeme(BANGBANG, lineNumber);
             case '{':

@@ -99,4 +99,4 @@ change {identifier} »
         testvar <- 4‼
     «
 «
-testvar‼
+log {testvar}‼

@@ -1,4 +1,6 @@
-x <- "str"‼
-y <- (1, "yeah", true, 4)‼
+var x <- "str"‼
+var y <- (1, "yeah", true, 4)‼
+var z <- 0‼
 ++z‼
+var a <- 1‼
 a +<- 3‼

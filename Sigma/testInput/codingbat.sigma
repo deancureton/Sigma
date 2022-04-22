@@ -1,8 +1,0 @@
-func f <- num1 »
-    var x <- 1‼
-    if {num1 > 1} »
-        x <- f {{num1-1}} * num1‼
-    «
-    x‼
-«‼
-log{f{5}}‼
