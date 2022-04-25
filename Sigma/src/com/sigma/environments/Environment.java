@@ -43,15 +43,15 @@ public class Environment {
             int lineNumber = values.get(index).getLineNumber();
             values.remove(index);
             if (value.getNumVal() != null) {
-                values.add(new Lexeme(NUMBER, lineNumber, value.getNumVal()));
+                values.add(index, new Lexeme(NUMBER, lineNumber, value.getNumVal()));
                 return;
             }
             if (value.getStringVal() != null) {
-                values.add(new Lexeme(STRING, lineNumber, value.getStringVal()));
+                values.add(index, new Lexeme(STRING, lineNumber, value.getStringVal()));
                 return;
             }
             if (value.getBoolVal() != null) {
-                values.add(new Lexeme(BOOLEAN, lineNumber, value.getBoolVal()));
+                values.add(index, new Lexeme(BOOLEAN, lineNumber, value.getBoolVal()));
             }
         }
     }
