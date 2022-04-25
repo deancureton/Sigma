@@ -38,7 +38,7 @@ public class Sigma {
         Parser parser = new Parser(lexer.lex());
         //lexer.printLexemes();
         Lexeme programParseTree = parser.program();
-        programParseTree.printTree();
+        //programParseTree.printTree();
         System.out.println();
 
         Environment global = new Environment();

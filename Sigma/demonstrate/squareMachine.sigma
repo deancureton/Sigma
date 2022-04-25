@@ -6,7 +6,7 @@ func squareMachine <- n »
 «‼
 
 var f <- squareMachine { 3 }‼
-var g <- squareMachine { 4 }‼
-
 log { f {} }‼
+
+var g <- squareMachine { 4 }‼
 log { g {} }‼
