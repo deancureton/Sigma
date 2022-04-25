@@ -151,7 +151,7 @@ var x <- (1, true, "three")‼️
 ```
 Arrays are surrounded by parentheses and elements are separated by commas (types are inferred). To access elements in an array, simply use the `get` function (indexing starts at 0):
 ```
-log {{ num {get {x 0}} + num{get {x 1}} }}‼️
+log {{ num {get {x, 0}} + num{get {x, 1}} }}‼️
 ```
 This code would output 2 (since `true` is equivalent to 1 when converted to a `num`).  
 To assign values in an array, simply use the `set` function (using the array as the first argument, the content as the second, and the index as the third):
@@ -172,7 +172,7 @@ To comment something out in Sigma, just use the `\` symbol. For multi-line comme
 # Built-in Functions
 
 `log{x}` takes in one argument, outputs the argument to the console, and appends a line break to the end.
-`random{num1 num2}` takes in two number arguments and outputs a random number between the two.
+`random{num1, num2}` takes in two number arguments and outputs a random number between the two.
 `abs{num}` calculates the absolute value of a number.
 `floor{num}`, `ceil{num}`, and `round{num}` truncate numbers as in other languages.
 `sqrt{num}` returns the square root of a number.
